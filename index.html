@@ -549,10 +549,18 @@
 
             async loadAllPlayers() {
                 const snapshot = await db.ref('players').once('value');
-                this.state.allPlayers = Object.entries(snapshot.val() || {}).map(([id, data]) => ({
-                    id,
-                    ...data
-                }));
+                const allPlayers = snapshot.val() || {};
+                
+                // Filter to only show Animal Game players (those with matches or isSubmitted properties)
+                this.state.allPlayers = Object.entries(allPlayers)
+                    .filter(([id, data]) => {
+                        // Only include if they have Animal Game data
+                        return data.matches !== undefined || data.isSubmitted !== undefined || data.checksUsed !== undefined;
+                    })
+                    .map(([id, data]) => ({
+                        id,
+                        ...data
+                    }));
             }
 
             async handleMatch(clueId, employeeId) {
