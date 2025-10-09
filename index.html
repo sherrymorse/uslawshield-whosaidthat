@@ -259,12 +259,63 @@
             margin-top: 1.5rem;
         }
 
-        .admin-panel {
-            background: rgba(0,0,0,0.9);
+        .admin-mini-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 400px;
+            max-height: 600px;
+            background: rgba(0,0,0,0.95);
             border: 3px solid #fbbf24;
             border-radius: 16px;
-            padding: 1.5rem;
+            padding: 1rem;
             backdrop-filter: blur(10px);
+            z-index: 200;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.7);
+        }
+
+        .admin-mini-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid #fbbf24;
+        }
+
+        .admin-toggle-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            border: 3px solid #fbbf24;
+            border-radius: 12px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 700;
+            color: white;
+            cursor: pointer;
+            z-index: 199;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            transition: all 0.2s;
+        }
+
+        .admin-toggle-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.6);
+        }
+
+        .mini-player-card {
+            background: rgba(124, 58, 237, 0.3);
+            border: 1px solid rgba(124, 58, 237, 0.5);
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .mini-player-card:hover {
+            background: rgba(124, 58, 237, 0.5);
         }
 
         .timer-badge {
@@ -407,11 +458,25 @@
                     elapsedTime: 0,
                     timerInterval: null,
                     showAdminPassword: false,
-                    tempAdminName: null
+                    tempAdminName: null,
+                    showAdminPanel: false
                 };
                 
                 this.initializeClues();
                 this.startPresenceTracking();
+                this.checkExistingSession();
+            }
+
+            async checkExistingSession() {
+                // Check if user has an active session
+                const savedSession = sessionStorage.getItem('animalGameSession');
+                if (savedSession) {
+                    const session = JSON.parse(savedSession);
+                    await this.initializePlayer(session.name, session.isAdmin);
+                    if (session.isAdmin) {
+                        await this.loadAllPlayers();
+                    }
+                }
                 this.render();
             }
 
@@ -933,7 +998,94 @@
                 `;
             }
 
-            getAdminHTML() {
+            getMiniAdminPanel() {
+                return `
+                    <div class="admin-mini-panel">
+                        <div class="admin-mini-header">
+                            <h3 class="text-lg font-bold text-yellow-400">Admin Panel</h3>
+                            <button
+                                onclick="game.toggleAdminPanel()"
+                                class="text-white hover:text-red-400 font-bold text-xl"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <button
+                                onclick="game.refreshPlayers()"
+                                class="w-full bg-blue-500 text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-600 text-sm mb-2"
+                            >
+                                Refresh Players
+                            </button>
+                        </div>
+
+                        <div class="space-y-2">
+                            ${this.state.allPlayers.map(player => {
+                                const status = this.getPlayerStatus(player);
+                                const matchCount = Object.keys(player.matches || {}).length;
+                                return `
+                                    <div class="mini-player-card">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <span class="font-bold text-white">${player.name}</span>
+                                            <span class="status-badge status-${status} text-xs">${status}</span>
+                                        </div>
+                                        <div class="text-gray-300 text-xs mb-2">
+                                            Progress: ${matchCount}/${EMPLOYEES.length} | 
+                                            Checks: ${player.checksUsed || 0}/2 | 
+                                            ${player.isSubmitted ? 'Score: ' + player.finalScore : 'Playing'}
+                                        </div>
+                                        <div class="flex gap-1">
+                                            <button
+                                                onclick="game.clearPlayerChoices('${player.id}')"
+                                                class="flex-1 bg-orange-500 text-white px-2 py-1 rounded text-xs font-bold hover:bg-orange-600"
+                                            >
+                                                Clear
+                                            </button>
+                                            <button
+                                                onclick="game.kickPlayer('${player.id}')"
+                                                class="flex-1 bg-red-500 text-white px-2 py-1 rounded text-xs font-bold hover:bg-red-600"
+                                            >
+                                                Kick
+                                            </button>
+                                            <button
+                                                onclick="game.deletePlayer('${player.id}')"
+                                                class="flex-1 bg-gray-600 text-white px-2 py-1 rounded text-xs font-bold hover:bg-gray-500"
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            getAdminToggleButton() {
+                return `
+                    <button
+                        onclick="game.toggleAdminPanel()"
+                        class="admin-toggle-btn"
+                    >
+                        👤 Admin Panel
+                    </button>
+                `;
+            }
+
+            toggleAdminPanel() {
+                this.state.showAdminPanel = !this.state.showAdminPanel;
+                if (this.state.showAdminPanel) {
+                    this.loadAllPlayers();
+                }
+                this.render();
+            }
+
+            async refreshPlayers() {
+                await this.loadAllPlayers();
+                this.render();
+            }
                 return `
                     <div class="max-w-7xl mx-auto py-8">
                         <div class="admin-panel">
@@ -1049,6 +1201,8 @@
                     <div class="timer-badge">
                         ⏱️ <span id="timer">${this.formatTime(this.state.elapsedTime)}</span>
                     </div>
+                    
+                    ${this.state.isAdmin ? (this.state.showAdminPanel ? this.getMiniAdminPanel() : this.getAdminToggleButton()) : ''}
                     
                     <div class="max-w-7xl mx-auto py-8">
                         <div class="text-center mb-8">
@@ -1268,7 +1422,6 @@
                     this.state.showAdminPassword = false;
                     this.state.tempAdminName = null;
                     this.render();
-                    alert('Admin login successful! Welcome, ' + ADMIN_NAME);
                 }
             }
 
@@ -1289,8 +1442,6 @@
                 
                 if (this.state.showAdminPassword) {
                     app.innerHTML = this.getAdminPasswordPrompt();
-                } else if (this.state.isAdmin && this.state.playerId) {
-                    app.innerHTML = this.getAdminHTML();
                 } else if (this.state.playerId && this.state.playerData) {
                     app.innerHTML = this.getGameHTML();
                     setTimeout(() => this.setupDragAndDrop(), 100);
