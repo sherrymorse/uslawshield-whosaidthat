@@ -3,20 +3,729 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Who Said That? - Animal Game</title>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <title>Animal Game - Who Said That?</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background: linear-gradient(135deg, #1e3a8a 0%, #7c3aed 50%, #db2777 100%);
+            min-height: 100vh;
+        }
+
+        .race-game-border {
+            background: linear-gradient(to bottom, #4a9fd8, #2563eb);
+            border-radius: 40px 40px 20px 20px;
+            padding: 6px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .race-game-inner {
+            background: linear-gradient(to bottom, #f0f9ff, #e0f2fe);
+            border-radius: 36px 36px 16px 16px;
+            border: 4px solid #22c55e;
+        }
+
+        .race-game-header {
+            background: linear-gradient(to bottom, #0ea5e9, #0284c7);
+            border-radius: 30px 30px 0 0;
+            border: 3px solid white;
+            color: #064e3b;
+            font-weight: 900;
+            font-size: 2rem;
+            padding: 1rem;
+            text-shadow: 2px 2px 0 white;
+            letter-spacing: 0.1em;
+        }
+
+        .lcd-display {
+            background: #000;
+            border: 6px solid #22c55e;
+            border-radius: 12px;
+            font-family: 'Orbitron', monospace;
+            color: #ff0000;
+            font-size: 6rem;
+            font-weight: 900;
+            text-align: center;
+            padding: 2rem;
+            box-shadow: inset 0 0 20px rgba(255,0,0,0.3), 0 0 30px rgba(34,197,94,0.5);
+            letter-spacing: 0.5rem;
+            min-height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .lcd-display.active {
+            color: #00ff00;
+            text-shadow: 0 0 20px #00ff00, 0 0 40px #00ff00;
+            animation: glow 0.5s ease-in-out;
+        }
+
+        @keyframes glow {
+            0%, 100% { text-shadow: 0 0 10px #00ff00; }
+            50% { text-shadow: 0 0 40px #00ff00, 0 0 60px #00ff00; }
+        }
+
+        .lever-container {
+            position: relative;
+            width: 80px;
+            height: 200px;
+            margin: 0 auto;
+        }
+
+        .lever-base {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 40px;
+            background: linear-gradient(to bottom, #ef4444, #991b1b);
+            border-radius: 8px;
+            border: 3px solid #fbbf24;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        .lever-arm {
+            position: absolute;
+            bottom: 35px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 12px;
+            height: 120px;
+            background: linear-gradient(to right, #525252, #737373);
+            border-radius: 6px;
+            transition: transform 0.3s ease;
+            transform-origin: bottom center;
+            cursor: pointer;
+            border: 2px solid #a3a3a3;
+        }
+
+        .lever-arm.pulled {
+            transform: translateX(-50%) rotate(-45deg);
+        }
+
+        .lever-handle {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            border-radius: 50%;
+            border: 4px solid #fbbf24;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+        }
+
+        .clue-card {
+            background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+            border: 4px solid #fbbf24;
+            border-radius: 16px;
+            padding: 1rem;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+        }
+
+        .clue-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+
+        .clue-card.matched {
+            border-color: #22c55e;
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+        }
+
+        .employee-btn {
+            background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
+            border: 3px solid #fbbf24;
+            border-radius: 12px;
+            padding: 1rem;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .employee-btn:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+        }
+
+        .employee-btn.assigned {
+            opacity: 0.6;
+            background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+        }
+
+        .admin-panel {
+            background: rgba(0,0,0,0.8);
+            border: 3px solid #fbbf24;
+            border-radius: 16px;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .token-input {
+            background: #1e293b;
+            border: 2px solid #22c55e;
+            color: #00ff00;
+            font-family: 'Orbitron', monospace;
+            font-size: 1.5rem;
+            text-align: center;
+            letter-spacing: 0.2em;
+        }
+    </style>
 </head>
 <body>
-    <div id="root"></div>
-    
-    <script type="text/babel">
-        const { useState, useEffect } = React;
-        
-        // Paste the entire React component code from the artifact here
-        // (I'll provide this in the next message to keep it clean)
+    <div id="app" class="p-4 min-h-screen"></div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            databaseURL: "https://uslawshield-bingo-default-rtdb.firebaseio.com/"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Employee data from your spreadsheet
+        const EMPLOYEES = [
+            { id: 1, name: "Carissa", animal: "Dolphin", quote: "Dolphins are intelligent, social and graceful. They work well in teams but still have their own sense of freedom and joy." },
+            { id: 2, name: "Dory", animal: "Platypus", quote: "The more you learn about it, the weirder it is" },
+            { id: 3, name: "Fernando", animal: "Goldfish", quote: "They've got a 10 second memory" },
+            { id: 4, name: "Heidy", animal: "Eagle", quote: "no reason" },
+            { id: 5, name: "Jason", animal: "Bear", quote: "I could roam the forest all day or catch fish in Alaska. In the summer, eat as much and stay in my den all winter." },
+            { id: 6, name: "Joe", animal: "Micro-pig", quote: "My wife thinks they are the cutest things on earth" },
+            { id: 7, name: "Lee", animal: "Koi fish", quote: "They live long lives and are so beautiful" },
+            { id: 8, name: "Magan", animal: "Bamboo Shark", quote: "They can live in a fish tank. Most people that have fish tanks typically take care of their fish so I could just vibe" },
+            { id: 9, name: "Sharon", animal: "Rottweiler", quote: "Rottweilers are loyal, funny, and they are good guard dogs and companions" },
+            { id: 10, name: "Victoria", animal: "Dolphin", quote: "They are highly intelligent, playful, emotionally aware, and social. They thrive through cooperation, curiosity and creativity." }
+        ];
+
+        class AnimalGame {
+            constructor() {
+                this.state = {
+                    isAdmin: false,
+                    playerToken: '',
+                    playerId: null,
+                    playerData: null,
+                    showLeverResult: false,
+                    leverPulled: false,
+                    correctCount: 0,
+                    shuffledClues: [],
+                    allPlayers: []
+                };
+                
+                this.initializeClues();
+                this.render();
+            }
+
+            initializeClues() {
+                this.state.shuffledClues = [...EMPLOYEES]
+                    .map(emp => ({ id: emp.id, animal: emp.animal, quote: emp.quote }))
+                    .sort(() => Math.random() - 0.5);
+            }
+
+            async initializePlayer(token) {
+                const playersRef = db.ref('players');
+                const snapshot = await playersRef.once('value');
+                const players = snapshot.val() || {};
+                
+                let player = null;
+                let playerId = null;
+
+                for (const [id, data] of Object.entries(players)) {
+                    if (data.token === token) {
+                        player = data;
+                        playerId = id;
+                        break;
+                    }
+                }
+
+                if (!player) {
+                    alert('Invalid token! Please check your token and try again.');
+                    return false;
+                }
+
+                this.state.playerId = playerId;
+                this.state.playerData = player;
+
+                // Initialize player data if needed
+                if (!player.matches) {
+                    await db.ref('players/' + playerId).update({
+                        matches: {},
+                        checksUsed: 0,
+                        isSubmitted: false,
+                        history: []
+                    });
+                }
+
+                // Listen for player updates
+                const self = this;
+                db.ref('players/' + playerId).on('value', (snapshot) => {
+                    self.state.playerData = snapshot.val();
+                    self.render();
+                });
+
+                return true;
+            }
+
+            async loadAllPlayers() {
+                const snapshot = await db.ref('players').once('value');
+                this.state.allPlayers = Object.entries(snapshot.val() || {}).map(([id, data]) => ({
+                    id,
+                    ...data
+                }));
+            }
+
+            async handleMatch(clueId, employeeId) {
+                if (!this.state.playerId || this.state.playerData.isSubmitted) return;
+
+                const matches = { ...this.state.playerData.matches };
+                const history = [...(this.state.playerData.history || [])];
+                
+                // Save to history for undo
+                history.push({ matches: { ...matches }, timestamp: Date.now() });
+                if (history.length > 3) history.shift();
+
+                matches[clueId] = employeeId;
+
+                await db.ref('players/' + this.state.playerId).update({
+                    matches,
+                    history
+                });
+            }
+
+            async handleClear(clueId) {
+                if (!this.state.playerId || this.state.playerData.isSubmitted) return;
+
+                const matches = { ...this.state.playerData.matches };
+                const history = [...(this.state.playerData.history || [])];
+                
+                history.push({ matches: { ...matches }, timestamp: Date.now() });
+                if (history.length > 3) history.shift();
+
+                delete matches[clueId];
+
+                await db.ref('players/' + this.state.playerId).update({
+                    matches,
+                    history
+                });
+            }
+
+            async handleUndo() {
+                if (!this.state.playerId || this.state.playerData.isSubmitted) return;
+
+                const history = [...(this.state.playerData.history || [])];
+                if (history.length === 0) return;
+
+                const previousState = history.pop();
+                await db.ref('players/' + this.state.playerId).update({
+                    matches: previousState.matches,
+                    history
+                });
+            }
+
+            calculateCorrect() {
+                const matches = this.state.playerData.matches || {};
+                let correct = 0;
+                for (const [clueId, employeeId] of Object.entries(matches)) {
+                    if (parseInt(clueId) === employeeId) {
+                        correct++;
+                    }
+                }
+                return correct;
+            }
+
+            async pullLever() {
+                if (this.state.playerData.checksUsed >= 2 || this.state.playerData.isSubmitted) return;
+
+                const matchCount = Object.keys(this.state.playerData.matches || {}).length;
+                if (matchCount !== EMPLOYEES.length) {
+                    alert('Please match all animals before checking!');
+                    return;
+                }
+
+                this.state.leverPulled = true;
+                this.render();
+
+                const self = this;
+                setTimeout(async () => {
+                    const correct = self.calculateCorrect();
+                    self.state.correctCount = correct;
+                    self.state.showLeverResult = true;
+                    self.state.leverPulled = false;
+
+                    await db.ref('players/' + self.state.playerId).update({
+                        checksUsed: self.state.playerData.checksUsed + 1
+                    });
+
+                    self.render();
+
+                    setTimeout(() => {
+                        self.state.showLeverResult = false;
+                        self.render();
+                    }, 4000);
+                }, 600);
+            }
+
+            async submitFinal() {
+                if (this.state.playerData.isSubmitted) return;
+
+                const matchCount = Object.keys(this.state.playerData.matches || {}).length;
+                if (matchCount !== EMPLOYEES.length) {
+                    alert('Please match all animals before submitting!');
+                    return;
+                }
+
+                const correct = this.calculateCorrect();
+                this.state.correctCount = correct;
+
+                await db.ref('players/' + this.state.playerId).update({
+                    isSubmitted: true,
+                    finalScore: correct,
+                    submittedAt: Date.now()
+                });
+
+                this.state.showLeverResult = true;
+                this.render();
+            }
+
+            async resetPlayer() {
+                if (!confirm('Reset your game? This will clear all progress.')) return;
+
+                this.initializeClues();
+                await db.ref('players/' + this.state.playerId).update({
+                    matches: {},
+                    checksUsed: 0,
+                    isSubmitted: false,
+                    history: [],
+                    finalScore: null
+                });
+            }
+
+            async addPlayer(name) {
+                const token = Math.random().toString(36).substring(2, 10).toUpperCase();
+                const newPlayerRef = db.ref('players').push();
+                await newPlayerRef.set({
+                    name,
+                    token,
+                    matches: {},
+                    checksUsed: 0,
+                    isSubmitted: false,
+                    createdAt: Date.now()
+                });
+                alert('Player added!\nName: ' + name + '\nToken: ' + token);
+                await this.loadAllPlayers();
+                this.render();
+            }
+
+            async deletePlayer(playerId) {
+                if (!confirm('Delete this player?')) return;
+                await db.ref('players/' + playerId).remove();
+                await this.loadAllPlayers();
+                this.render();
+            }
+
+            renderLogin() {
+                return `
+                    <div class="flex items-center justify-center min-h-screen">
+                        <div class="race-game-border max-w-md w-full">
+                            <div class="race-game-inner p-8">
+                                <div class="race-game-header text-center">
+                                    ANIMAL GAME
+                                </div>
+                                <div class="mt-6 space-y-4">
+                                    <input
+                                        type="text"
+                                        id="tokenInput"
+                                        placeholder="ENTER TOKEN"
+                                        class="token-input w-full px-4 py-3 rounded-lg"
+                                    />
+                                    <button
+                                        onclick="game.login()"
+                                        class="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-lg font-bold text-xl hover:shadow-lg"
+                                    >
+                                        START GAME
+                                    </button>
+                                    <button
+                                        onclick="game.showAdmin()"
+                                        class="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 text-black py-2 rounded-lg font-bold hover:shadow-lg"
+                                    >
+                                        ADMIN LOGIN
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            renderAdminPanel() {
+                return `
+                    <div class="max-w-6xl mx-auto py-8">
+                        <div class="admin-panel">
+                            <h1 class="text-4xl font-bold text-yellow-400 mb-6 text-center">ADMIN PANEL</h1>
+                            
+                            <div class="mb-6">
+                                <button
+                                    onclick="game.state.isAdmin = false; game.render();"
+                                    class="bg-red-500 text-white px-4 py-2 rounded-lg font-bold"
+                                >
+                                    ← BACK TO LOGIN
+                                </button>
+                            </div>
+
+                            <div class="mb-8 bg-gray-900 rounded-lg p-4">
+                                <h2 class="text-2xl font-bold text-yellow-400 mb-4">Add New Player</h2>
+                                <div class="flex gap-4">
+                                    <input
+                                        type="text"
+                                        id="newPlayerName"
+                                        placeholder="Player Name"
+                                        class="flex-1 px-4 py-2 rounded-lg bg-gray-800 text-white border-2 border-green-500"
+                                    />
+                                    <button
+                                        onclick="game.addPlayer(document.getElementById('newPlayerName').value); document.getElementById('newPlayerName').value = '';"
+                                        class="bg-green-500 text-white px-6 py-2 rounded-lg font-bold hover:bg-green-600"
+                                    >
+                                        ADD PLAYER
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="overflow-x-auto">
+                                <h2 class="text-2xl font-bold text-yellow-400 mb-4">All Players</h2>
+                                <table class="w-full text-white">
+                                    <thead>
+                                        <tr class="border-b-2 border-yellow-400">
+                                            <th class="p-3 text-left">Name</th>
+                                            <th class="p-3 text-left">Token</th>
+                                            <th class="p-3 text-center">Matched</th>
+                                            <th class="p-3 text-center">Checks Used</th>
+                                            <th class="p-3 text-center">Submitted</th>
+                                            <th class="p-3 text-center">Final Score</th>
+                                            <th class="p-3 text-center">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${this.state.allPlayers.map(player => `
+                                            <tr class="border-b border-gray-700">
+                                                <td class="p-3">${player.name}</td>
+                                                <td class="p-3 font-mono text-green-400">${player.token}</td>
+                                                <td class="p-3 text-center">${Object.keys(player.matches || {}).length} / ${EMPLOYEES.length}</td>
+                                                <td class="p-3 text-center">${player.checksUsed || 0} / 2</td>
+                                                <td class="p-3 text-center">${player.isSubmitted ? '✓' : '✗'}</td>
+                                                <td class="p-3 text-center">${player.finalScore !== null && player.finalScore !== undefined ? player.finalScore : '-'}</td>
+                                                <td class="p-3 text-center">
+                                                    <button
+                                                        onclick="game.deletePlayer('${player.id}')"
+                                                        class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-sm"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            renderGame() {
+                const matches = this.state.playerData.matches || {};
+                const matchCount = Object.keys(matches).length;
+                const checksRemaining = 2 - (this.state.playerData.checksUsed || 0);
+                const canPullLever = matchCount === EMPLOYEES.length && checksRemaining > 0 && !this.state.playerData.isSubmitted;
+
+                return `
+                    <div class="max-w-7xl mx-auto py-8">
+                        <div class="text-center mb-8">
+                            <h1 class="text-6xl font-bold text-yellow-300 mb-2" style="text-shadow: 3px 3px 0 #000, -1px -1px 0 #fff;">
+                                ANIMAL GAME
+                            </h1>
+                            <p class="text-2xl text-white font-bold">Who Said That?</p>
+                            <p class="text-xl text-yellow-200 mt-2">Welcome, ${this.state.playerData.name}!</p>
+                        </div>
+
+                        ${this.state.showLeverResult ? `
+                            <div class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
+                                <div class="race-game-border" style="width: 600px;">
+                                    <div class="race-game-inner p-8">
+                                        <div class="race-game-header text-center">
+                                            ${this.state.playerData.isSubmitted ? 'FINAL SCORE' : 'CHECK RESULTS'}
+                                        </div>
+                                        <div class="lcd-display active mt-6">
+                                            ${this.state.correctCount}
+                                        </div>
+                                        <div class="text-center text-2xl font-bold mt-6" style="color: #064e3b;">
+                                            CORRECT!
+                                        </div>
+                                        ${this.state.playerData.isSubmitted ? `
+                                            <button
+                                                onclick="game.resetPlayer()"
+                                                class="w-full mt-6 bg-green-500 text-white py-3 rounded-lg font-bold text-xl hover:bg-green-600"
+                                            >
+                                                PLAY AGAIN
+                                            </button>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        ` : ''}
+
+                        <div class="grid lg:grid-cols-3 gap-8 mb-8">
+                            <div class="lg:col-span-2">
+                                <div class="race-game-border">
+                                    <div class="race-game-inner p-6">
+                                        <div class="race-game-header">
+                                            🦁 ANIMALS & QUOTES
+                                        </div>
+                                        <div class="space-y-3 mt-6">
+                                            ${this.state.shuffledClues.map(clue => `
+                                                <div class="clue-card ${matches[clue.id] ? 'matched' : ''}">
+                                                    <div class="text-white font-bold text-lg mb-1">🐾 ${clue.animal}</div>
+                                                    <div class="text-yellow-100 italic">"${clue.quote}"</div>
+                                                    ${matches[clue.id] ? `
+                                                        <div class="mt-2 flex items-center justify-between">
+                                                            <span class="text-white font-bold">
+                                                                ✓ ${EMPLOYEES.find(e => e.id === matches[clue.id]).name}
+                                                            </span>
+                                                            ${!this.state.playerData.isSubmitted ? `
+                                                                <button
+                                                                    onclick="game.handleClear(${clue.id})"
+                                                                    class="bg-red-500 text-white px-3 py-1 rounded font-bold hover:bg-red-600"
+                                                                >
+                                                                    CLEAR
+                                                                </button>
+                                                            ` : ''}
+                                                        </div>
+                                                    ` : ''}
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="race-game-border">
+                                    <div class="race-game-inner p-6">
+                                        <div class="race-game-header">
+                                            👥 EMPLOYEES
+                                        </div>
+                                        <div class="grid grid-cols-1 gap-3 mt-6">
+                                            ${EMPLOYEES.map(employee => {
+                                                const isAssigned = Object.values(matches).includes(employee.id);
+                                                const unmatched = this.state.shuffledClues.find(c => !matches[c.id]);
+                                                return `
+                                                    <button
+                                                        onclick="game.handleMatch(${unmatched ? unmatched.id : 'null'}, ${employee.id})"
+                                                        ${this.state.playerData.isSubmitted || !unmatched ? 'disabled' : ''}
+                                                        class="employee-btn text-white ${isAssigned ? 'assigned' : ''}"
+                                                    >
+                                                        ${employee.name}
+                                                        ${isAssigned ? '<div class="text-xs mt-1">✓ ASSIGNED</div>' : ''}
+                                                    </button>
+                                                `;
+                                            }).join('')}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="race-game-border">
+                            <div class="race-game-inner p-6">
+                                <div class="flex flex-wrap items-center justify-center gap-8">
+                                    <div class="text-center">
+                                        <div class="lever-container" style="cursor: ${canPullLever ? 'pointer' : 'not-allowed'};" onclick="${canPullLever ? 'game.pullLever()' : ''}">
+                                            <div class="lever-arm ${this.state.leverPulled ? 'pulled' : ''}">
+                                                <div class="lever-handle"></div>
+                                            </div>
+                                            <div class="lever-base"></div>
+                                        </div>
+                                        <div class="mt-4 text-sm font-bold" style="color: #064e3b;">
+                                            PULL TO CHECK<br>
+                                            (${checksRemaining} checks left)
+                                        </div>
+                                    </div>
+
+                                    <div class="flex flex-col gap-4">
+                                        <div class="text-center text-2xl font-bold" style="color: #064e3b;">
+                                            MATCHED: ${matchCount} / ${EMPLOYEES.length}
+                                        </div>
+                                        
+                                        <button
+                                            onclick="game.submitFinal()"
+                                            ${this.state.playerData.isSubmitted || matchCount !== EMPLOYEES.length ? 'disabled' : ''}
+                                            class="bg-green-500 text-white px-8 py-4 rounded-xl font-bold text-xl hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            SUBMIT FINAL
+                                        </button>
+
+                                        <button
+                                            onclick="game.handleUndo()"
+                                            ${this.state.playerData.isSubmitted || !this.state.playerData.history || this.state.playerData.history.length === 0 ? 'disabled' : ''}
+                                            class="bg-yellow-500 text-black px-8 py-3 rounded-xl font-bold hover:bg-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            UNDO LAST (${this.state.playerData.history ? this.state.playerData.history.length : 0})
+                                        </button>
+
+                                        <button
+                                            onclick="game.resetPlayer()"
+                                            class="bg-red-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-red-600"
+                                        >
+                                            RESET GAME
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            async login() {
+                const token = document.getElementById('tokenInput').value.trim().toUpperCase();
+                if (!token) {
+                    alert('Please enter a token!');
+                    return;
+                }
+
+                this.state.playerToken = token;
+                const success = await this.initializePlayer(token);
+                if (success) {
+                    this.render();
+                }
+            }
+
+            async showAdmin() {
+                this.state.isAdmin = true;
+                await this.loadAllPlayers();
+                this.render();
+            }
+
+            render() {
+                const app = document.getElementById('app');
+                
+                if (this.state.isAdmin) {
+                    app.innerHTML = this.renderAdminPanel();
+                } else if (this.state.playerId && this.state.playerData) {
+                    app.innerHTML = this.renderGame();
+                } else {
+                    app.innerHTML = this.renderLogin();
+                }
+            }
+        }
+
+        const game = new AnimalGame();
     </script>
 </body>
 </html>
