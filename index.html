@@ -20,7 +20,6 @@
         body {
             font-family: 'Poppins', sans-serif;
             background: linear-gradient(135deg, #1e40af 0%, #7c3aed 50%, #ec4899 100%);
-            background: -moz-linear-gradient(135deg, #1e40af 0%, #7c3aed 50%, #ec4899 100%);
             min-height: 100vh;
             line-height: 1.5;
         }
@@ -443,8 +442,12 @@
                     if (savedSession) {
                         const session = JSON.parse(savedSession);
                         console.log('Restoring session for:', session.playerName);
-                        const success = await this.initializePlayer(session.playerName, session.isAdmin);
-                        if (success) {
+                        const timeoutPromise = new Promise((_, reject) => {
+                            setTimeout(() => reject(new Error('Session restore timeout')), 5000);
+                        });
+                        const initPromise = this.initializePlayer(session.playerName, session.isAdmin);
+                        await Promise.race([initPromise, timeoutPromise]);
+                        if (await initPromise) {
                             console.log('Session restored successfully');
                             return;
                         }
@@ -452,7 +455,9 @@
                 } catch (error) {
                     console.error('Session recovery error:', error);
                     sessionStorage.removeItem('animalGameSession');
+                    alert('Session restore failed. Please log in again.');
                 }
+                this.state.isLoading = false;
                 this.render();
             }
             initializeClues() {
@@ -577,16 +582,20 @@
                 }
             }
             async loadAllPlayers() {
-                const snapshot = await db.ref('players').once('value');
-                const allPlayers = snapshot.val() || {};
-                this.state.allPlayers = Object.entries(allPlayers)
-                    .filter(([id, data]) => {
-                        return data.matches !== undefined || data.isSubmitted !== undefined || data.checksUsed !== undefined;
-                    })
-                    .map(([id, data]) => ({
-                        id,
-                        ...data
-                    }));
+                try {
+                    const snapshot = await db.ref('players').once('value');
+                    const allPlayers = snapshot.val() || {};
+                    this.state.allPlayers = Object.entries(allPlayers)
+                        .filter(([id, data]) => {
+                            return data.matches !== undefined || data.isSubmitted !== undefined || data.checksUsed !== undefined;
+                        })
+                        .map(([id, data]) => ({
+                            id,
+                            ...data
+                        }));
+                } catch (error) {
+                    console.error('Error loading players:', error);
+                }
             }
             async handleMatch(clueId, employeeId) {
                 if (!this.state.playerId || this.state.playerData.isSubmitted) return;
@@ -602,11 +611,15 @@
                 this.state.playerData.matches = matches;
                 this.state.playerData.history = history;
                 this.render();
-                await db.ref('players/' + this.state.playerId).update({
-                    matches,
-                    history,
-                    lastActive: Date.now()
-                });
+                try {
+                    await db.ref('players/' + this.state.playerId).update({
+                        matches,
+                        history,
+                        lastActive: Date.now()
+                    });
+                } catch (error) {
+                    console.error('Error updating matches:', error);
+                }
             }
             async handleClear(clueId) {
                 if (!this.state.playerId || this.state.playerData.isSubmitted) return;
@@ -618,11 +631,15 @@
                 this.state.playerData.matches = matches;
                 this.state.playerData.history = history;
                 this.render();
-                await db.ref('players/' + this.state.playerId).update({
-                    matches,
-                    history,
-                    lastActive: Date.now()
-                });
+                try {
+                    await db.ref('players/' + this.state.playerId).update({
+                        matches,
+                        history,
+                        lastActive: Date.now()
+                    });
+                } catch (error) {
+                    console.error('Error clearing match:', error);
+                }
             }
             async handleUndo() {
                 if (!this.state.playerId || this.state.playerData.isSubmitted) return;
@@ -632,11 +649,15 @@
                 this.state.playerData.matches = previousState.matches;
                 this.state.playerData.history = history;
                 this.render();
-                await db.ref('players/' + this.state.playerId).update({
-                    matches: previousState.matches,
-                    history,
-                    lastActive: Date.now()
-                });
+                try {
+                    await db.ref('players/' + this.state.playerId).update({
+                        matches: previousState.matches,
+                        history,
+                        lastActive: Date.now()
+                    });
+                } catch (error) {
+                    console.error('Error undoing match:', error);
+                }
             }
             calculateCorrect() {
                 const matches = this.state.playerData.matches || {};
@@ -663,10 +684,14 @@
                     self.state.correctCount = correct;
                     self.state.showLeverResult = true;
                     self.state.leverPulled = false;
-                    await db.ref('players/' + self.state.playerId).update({
-                        checksUsed: self.state.playerData.checksUsed + 1,
-                        lastActive: Date.now()
-                    });
+                    try {
+                        await db.ref('players/' + self.state.playerId).update({
+                            checksUsed: self.state.playerData.checksUsed + 1,
+                            lastActive: Date.now()
+                        });
+                    } catch (error) {
+                        console.error('Error updating checks:', error);
+                    }
                     self.render();
                     setTimeout(() => {
                         self.state.showLeverResult = false;
@@ -684,13 +709,17 @@
                 const correct = this.calculateCorrect();
                 this.state.correctCount = correct;
                 this.stopTimer();
-                await db.ref('players/' + this.state.playerId).update({
-                    isSubmitted: true,
-                    finalScore: correct,
-                    completionTime: this.state.elapsedTime,
-                    submittedAt: Date.now(),
-                    lastActive: Date.now()
-                });
+                try {
+                    await db.ref('players/' + this.state.playerId).update({
+                        isSubmitted: true,
+                        finalScore: correct,
+                        completionTime: this.state.elapsedTime,
+                        submittedAt: Date.now(),
+                        lastActive: Date.now()
+                    });
+                } catch (error) {
+                    console.error('Error submitting final:', error);
+                }
                 this.state.showLeverResult = true;
                 this.render();
             }
@@ -699,64 +728,84 @@
                 this.initializeClues();
                 this.stopTimer();
                 this.state.elapsedTime = 0;
-                await db.ref('players/' + this.state.playerId).update({
-                    matches: {},
-                    checksUsed: 0,
-                    isSubmitted: false,
-                    history: [],
-                    finalScore: null,
-                    completionTime: null,
-                    lastActive: Date.now()
-                });
+                try {
+                    await db.ref('players/' + this.state.playerId).update({
+                        matches: {},
+                        checksUsed: 0,
+                        isSubmitted: false,
+                        history: [],
+                        finalScore: null,
+                        completionTime: null,
+                        lastActive: Date.now()
+                    });
+                } catch (error) {
+                    console.error('Error resetting player:', error);
+                }
                 this.startTimer();
             }
             async addPlayer(name) {
                 const playersRef = db.ref('players');
-                const snapshot = await playersRef.once('value');
-                const players = snapshot.val() || {};
-                for (const [id, data] of Object.entries(players)) {
-                    if (data.name && data.name.toLowerCase() === name.toLowerCase()) {
-                        alert('Player "' + name + '" already exists!');
-                        return;
+                try {
+                    const snapshot = await playersRef.once('value');
+                    const players = snapshot.val() || {};
+                    for (const [id, data] of Object.entries(players)) {
+                        if (data.name && data.name.toLowerCase() === name.toLowerCase()) {
+                            alert('Player "' + name + '" already exists!');
+                            return;
+                        }
                     }
+                    const newPlayerRef = playersRef.push();
+                    await newPlayerRef.set({
+                        name,
+                        matches: {},
+                        checksUsed: 0,
+                        isSubmitted: false,
+                        createdAt: Date.now(),
+                        lastActive: Date.now()
+                    });
+                    alert('Player "' + name + '" added successfully!');
+                    await this.loadAllPlayers();
+                    this.render();
+                } catch (error) {
+                    console.error('Error adding player:', error);
                 }
-                const newPlayerRef = playersRef.push();
-                await newPlayerRef.set({
-                    name,
-                    matches: {},
-                    checksUsed: 0,
-                    isSubmitted: false,
-                    createdAt: Date.now(),
-                    lastActive: Date.now()
-                });
-                alert('Player "' + name + '" added successfully!');
-                await this.loadAllPlayers();
-                this.render();
             }
             async deletePlayer(playerId) {
                 if (!confirm('Delete this player?')) return;
-                await db.ref('players/' + playerId).remove();
-                await this.loadAllPlayers();
-                this.render();
+                try {
+                    await db.ref('players/' + playerId).remove();
+                    await this.loadAllPlayers();
+                    this.render();
+                } catch (error) {
+                    console.error('Error deleting player:', error);
+                }
             }
             async kickPlayer(playerId) {
                 if (!confirm('Kick this player from the game?')) return;
-                await db.ref('players/' + playerId).update({
-                    kicked: true,
-                    lastActive: Date.now()
-                });
-                await this.loadAllPlayers();
-                this.render();
+                try {
+                    await db.ref('players/' + playerId).update({
+                        kicked: true,
+                        lastActive: Date.now()
+                    });
+                    await this.loadAllPlayers();
+                    this.render();
+                } catch (error) {
+                    console.error('Error kicking player:', error);
+                }
             }
             async clearPlayerChoices(playerId) {
                 if (!confirm('Clear this player\'s choices?')) return;
-                await db.ref('players/' + playerId).update({
-                    matches: {},
-                    history: [],
-                    lastActive: Date.now()
-                });
-                await this.loadAllPlayers();
-                this.render();
+                try {
+                    await db.ref('players/' + playerId).update({
+                        matches: {},
+                        history: [],
+                        lastActive: Date.now()
+                    });
+                    await this.loadAllPlayers();
+                    this.render();
+                } catch (error) {
+                    console.error('Error clearing player choices:', error);
+                }
             }
             setupDragAndDrop() {
                 const self = this;
