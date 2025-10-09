@@ -462,11 +462,33 @@
                     timerInterval: null,
                     showAdminPassword: false,
                     tempAdminName: null,
-                    showAdminPanel: false
+                    showAdminPanel: false,
+                    isLoading: true
                 };
                 
                 this.initializeClues();
                 this.startPresenceTracking();
+                this.checkExistingSession();
+            }
+
+            async checkExistingSession() {
+                try {
+                    const savedSession = sessionStorage.getItem('animalGameSession');
+                    if (savedSession) {
+                        const session = JSON.parse(savedSession);
+                        const success = await this.initializePlayer(session.playerName, session.isAdmin);
+                        if (success) {
+                            this.state.isLoading = false;
+                            this.render();
+                            return;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Session recovery error:', error);
+                    sessionStorage.removeItem('animalGameSession');
+                }
+                
+                this.state.isLoading = false;
                 this.render();
             }
 
@@ -584,12 +606,17 @@
                     this.state.playerData = player;
                     this.state.isAdmin = isAdmin;
 
+                    sessionStorage.setItem('animalGameSession', JSON.stringify({
+                        playerName: playerName,
+                        isAdmin: isAdmin
+                    }));
+
                     const self = this;
                     db.ref('players/' + playerId).on('value', (snapshot) => {
                         const data = snapshot.val();
                         if (data) {
                             self.state.playerData = data;
-                            if (self.state.playerId) {
+                            if (self.state.playerId && !self.state.isLoading) {
                                 self.render();
                             }
                         }
@@ -635,14 +662,11 @@
 
                 matches[clueId] = employeeId;
 
-                // Update local state immediately
                 this.state.playerData.matches = matches;
                 this.state.playerData.history = history;
                 
-                // Render immediately
                 this.render();
 
-                // Then save to Firebase
                 await db.ref('players/' + this.state.playerId).update({
                     matches,
                     history,
@@ -661,14 +685,11 @@
 
                 delete matches[clueId];
 
-                // Update local state immediately
                 this.state.playerData.matches = matches;
                 this.state.playerData.history = history;
                 
-                // Render immediately
                 this.render();
 
-                // Then save to Firebase
                 await db.ref('players/' + this.state.playerId).update({
                     matches,
                     history,
@@ -684,14 +705,11 @@
 
                 const previousState = history.pop();
                 
-                // Update local state immediately
                 this.state.playerData.matches = previousState.matches;
                 this.state.playerData.history = history;
                 
-                // Render immediately
                 this.render();
 
-                // Then save to Firebase
                 await db.ref('players/' + this.state.playerId).update({
                     matches: previousState.matches,
                     history,
@@ -882,12 +900,15 @@
                 });
 
                 document.querySelectorAll('.neon-tag.placed').forEach(tag => {
-                    tag.addEventListener('click', () => {
+                    tag.addEventListener('dblclick', () => {
                         if (!self.state.playerData.isSubmitted) {
                             const clueId = parseInt(tag.dataset.clueId);
                             self.handleClear(clueId);
                         }
                     });
+                    
+                    tag.style.cursor = 'pointer';
+                    tag.title = 'Double-click to remove';
                 });
             }
 
@@ -1005,6 +1026,13 @@
                                     style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;"
                                 >
                                     Start Playing
+                                </button>
+                                <button
+                                    onclick="sessionStorage.clear(); location.reload();"
+                                    class="login-button text-sm"
+                                    style="background: #e5e7eb; color: #6b7280; padding: 0.5rem 1rem;"
+                                >
+                                    Clear Session & Reload
                                 </button>
                             </div>
                             
@@ -1308,6 +1336,7 @@
                     this.state.showAdminPassword = false;
                     this.state.tempAdminName = null;
                     this.state.showAdminPanel = false;
+                    sessionStorage.removeItem('animalGameSession');
                     this.stopTimer();
                     this.render();
                 }
@@ -1316,14 +1345,44 @@
             async render() {
                 const app = document.getElementById('app');
                 
+                if (this.state.isLoading) {
+                    app.innerHTML = `
+                        <div class="flex items-center justify-center min-h-screen">
+                            <div class="text-center">
+                                <div class="text-6xl mb-4">🐾</div>
+                                <div class="text-2xl font-bold text-white">Loading Animal Game...</div>
+                                <div class="mt-4">
+                                    <button
+                                        onclick="sessionStorage.clear(); location.reload();"
+                                        class="bg-white text-purple-600 px-6 py-2 rounded-lg font-bold hover:bg-gray-100"
+                                    >
+                                        Stuck? Click to Reset
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+                
                 if (this.state.showAdminPassword) {
                     app.innerHTML = this.getAdminPasswordPrompt();
+                    setTimeout(() => {
+                        const passwordInput = document.getElementById('adminPassword');
+                        if (passwordInput) passwordInput.focus();
+                    }, 100);
                 } else if (this.state.playerId && this.state.playerData) {
                     app.innerHTML = this.getGameHTML();
-                    setTimeout(() => this.setupDragAndDrop(), 100);
+                    setTimeout(() => {
+                        this.setupDragAndDrop();
+                    }, 50);
                 } else {
                     await this.loadAllPlayers();
                     app.innerHTML = this.getLoginHTML();
+                    setTimeout(() => {
+                        const nameInput = document.getElementById('nameInput');
+                        if (nameInput) nameInput.focus();
+                    }, 100);
                 }
             }
         }
