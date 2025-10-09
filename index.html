@@ -476,10 +476,13 @@
                     const savedSession = sessionStorage.getItem('animalGameSession');
                     if (savedSession) {
                         const session = JSON.parse(savedSession);
+                        console.log('Restoring session for:', session.playerName);
+                        
+                        this.state.isLoading = false;
+                        
                         const success = await this.initializePlayer(session.playerName, session.isAdmin);
                         if (success) {
-                            this.state.isLoading = false;
-                            this.render();
+                            console.log('Session restored successfully');
                             return;
                         }
                     }
