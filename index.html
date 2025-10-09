@@ -8,37 +8,37 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@400;600;700;800;900&display=swap');
         
         body {
-            font-family: 'Orbitron', sans-serif;
+            font-family: 'Inter', sans-serif;
             background: linear-gradient(135deg, #0066cc 0%, #0099ff 50%, #00ccff 100%);
             min-height: 100vh;
         }
 
         .race-game-border {
             background: linear-gradient(to bottom, #4a9fd8, #2563eb);
-            border-radius: 40px 40px 20px 20px;
+            border-radius: 24px;
             padding: 6px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
         .race-game-inner {
-            background: linear-gradient(to bottom, #f0f9ff, #e0f2fe);
-            border-radius: 36px 36px 16px 16px;
-            border: 4px solid #22c55e;
+            background: white;
+            border-radius: 20px;
+            border: 3px solid #22c55e;
         }
 
         .race-game-header {
             background: linear-gradient(to bottom, #0ea5e9, #0284c7);
-            border-radius: 30px 30px 0 0;
+            border-radius: 18px 18px 0 0;
             border: 3px solid white;
-            color: #064e3b;
+            color: white;
             font-weight: 900;
-            font-size: 2rem;
-            padding: 1rem;
-            text-shadow: 2px 2px 0 white;
-            letter-spacing: 0.1em;
+            font-size: 2.5rem;
+            padding: 1.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            letter-spacing: 0.05em;
         }
 
         .lcd-display {
@@ -164,11 +164,6 @@
             border-width: 4px;
         }
 
-        .drop-zone.filled {
-            border-style: solid;
-            border-color: #22c55e;
-        }
-
         .neon-tag {
             background: linear-gradient(180deg, #ffff00 0%, #ffed4e 100%);
             border: 4px solid #000;
@@ -250,21 +245,108 @@
         }
 
         .admin-panel {
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.9);
             border: 3px solid #fbbf24;
             border-radius: 16px;
             padding: 1.5rem;
             backdrop-filter: blur(10px);
         }
 
-        .token-input {
-            background: #1e293b;
-            border: 2px solid #22c55e;
-            color: #00ff00;
+        .timer-badge {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.85);
+            border: 3px solid #22c55e;
+            border-radius: 12px;
+            padding: 0.75rem 1.5rem;
             font-family: 'Orbitron', monospace;
-            font-size: 1.5rem;
-            text-align: center;
-            letter-spacing: 0.2em;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #00ff00;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            z-index: 100;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .status-active {
+            background: #22c55e;
+            color: white;
+        }
+
+        .status-idle {
+            background: #fbbf24;
+            color: #000;
+        }
+
+        .status-completed {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 24px;
+            padding: 3rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 480px;
+            width: 100%;
+        }
+
+        .login-input {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1.125rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .login-input:focus {
+            outline: none;
+            border-color: #0ea5e9;
+            box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
+        }
+
+        .login-button {
+            width: 100%;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.125rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 0.05em;
+        }
+
+        .login-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        }
+
+        .player-list-item {
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            transition: all 0.2s;
+        }
+
+        .player-list-item:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.2);
         }
     </style>
 </head>
@@ -277,6 +359,9 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+
+        const ADMIN_PASSWORD = "Airport-1";
+        const ADMIN_NAME = "Sherry Morse";
 
         const EMPLOYEES = [
             { id: 1, name: "Carissa", animal: "Dolphin", quote: "Dolphins are intelligent, social and graceful. They work well in teams but still have their own sense of freedom and joy." },
@@ -302,10 +387,14 @@
                     correctCount: 0,
                     shuffledClues: [],
                     allPlayers: [],
-                    draggedEmployeeId: null
+                    draggedEmployeeId: null,
+                    startTime: null,
+                    elapsedTime: 0,
+                    timerInterval: null
                 };
                 
                 this.initializeClues();
+                this.startPresenceTracking();
                 this.render();
             }
 
@@ -317,7 +406,64 @@
                 })).sort(() => Math.random() - 0.5);
             }
 
-            async initializePlayer(playerName) {
+            startPresenceTracking() {
+                setInterval(() => {
+                    if (this.state.playerId) {
+                        db.ref('players/' + this.state.playerId).update({
+                            lastActive: Date.now()
+                        });
+                    }
+                }, 10000);
+            }
+
+            startTimer() {
+                this.state.startTime = Date.now();
+                this.state.timerInterval = setInterval(() => {
+                    this.state.elapsedTime = Math.floor((Date.now() - this.state.startTime) / 1000);
+                    const timerEl = document.getElementById('timer');
+                    if (timerEl) {
+                        timerEl.textContent = this.formatTime(this.state.elapsedTime);
+                    }
+                }, 1000);
+            }
+
+            stopTimer() {
+                if (this.state.timerInterval) {
+                    clearInterval(this.state.timerInterval);
+                    this.state.timerInterval = null;
+                }
+            }
+
+            formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return mins + ':' + (secs < 10 ? '0' : '') + secs;
+            }
+
+            getPlayerStatus(player) {
+                const now = Date.now();
+                const lastActive = player.lastActive || player.createdAt || now;
+                const timeSince = now - lastActive;
+
+                if (player.isSubmitted) {
+                    return 'completed';
+                } else if (timeSince < 300000) {
+                    return 'active';
+                } else {
+                    return 'idle';
+                }
+            }
+
+            getTimeSinceActive(lastActive) {
+                const now = Date.now();
+                const diff = Math.floor((now - lastActive) / 1000);
+                
+                if (diff < 60) return diff + 's ago';
+                if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+                return Math.floor(diff / 3600) + 'h ago';
+            }
+
+            async initializePlayer(playerName, isAdmin = false) {
                 try {
                     const playersRef = db.ref('players');
                     const snapshot = await playersRef.once('value');
@@ -342,24 +488,36 @@
                             matches: {},
                             checksUsed: 0,
                             isSubmitted: false,
-                            createdAt: Date.now()
+                            createdAt: Date.now(),
+                            lastActive: Date.now(),
+                            isAdmin: isAdmin
                         });
                         player = {
                             name: playerName,
                             matches: {},
                             checksUsed: 0,
-                            isSubmitted: false
+                            isSubmitted: false,
+                            isAdmin: isAdmin
                         };
+                    } else {
+                        await db.ref('players/' + playerId).update({
+                            lastActive: Date.now()
+                        });
                     }
 
                     this.state.playerId = playerId;
                     this.state.playerData = player;
+                    this.state.isAdmin = isAdmin;
 
                     const self = this;
                     db.ref('players/' + playerId).on('value', (snapshot) => {
                         self.state.playerData = snapshot.val();
                         self.render();
                     });
+
+                    if (!isAdmin) {
+                        this.startTimer();
+                    }
 
                     return true;
                 } catch (error) {
@@ -395,7 +553,8 @@
 
                 await db.ref('players/' + this.state.playerId).update({
                     matches,
-                    history
+                    history,
+                    lastActive: Date.now()
                 });
             }
 
@@ -412,7 +571,8 @@
 
                 await db.ref('players/' + this.state.playerId).update({
                     matches,
-                    history
+                    history,
+                    lastActive: Date.now()
                 });
             }
 
@@ -425,7 +585,8 @@
                 const previousState = history.pop();
                 await db.ref('players/' + this.state.playerId).update({
                     matches: previousState.matches,
-                    history
+                    history,
+                    lastActive: Date.now()
                 });
             }
 
@@ -460,7 +621,8 @@
                     self.state.leverPulled = false;
 
                     await db.ref('players/' + self.state.playerId).update({
-                        checksUsed: self.state.playerData.checksUsed + 1
+                        checksUsed: self.state.playerData.checksUsed + 1,
+                        lastActive: Date.now()
                     });
 
                     self.render();
@@ -483,11 +645,14 @@
 
                 const correct = this.calculateCorrect();
                 this.state.correctCount = correct;
+                this.stopTimer();
 
                 await db.ref('players/' + this.state.playerId).update({
                     isSubmitted: true,
                     finalScore: correct,
-                    submittedAt: Date.now()
+                    completionTime: this.state.elapsedTime,
+                    submittedAt: Date.now(),
+                    lastActive: Date.now()
                 });
 
                 this.state.showLeverResult = true;
@@ -498,13 +663,20 @@
                 if (!confirm('Reset your game? This will clear all progress.')) return;
 
                 this.initializeClues();
+                this.stopTimer();
+                this.state.elapsedTime = 0;
+                
                 await db.ref('players/' + this.state.playerId).update({
                     matches: {},
                     checksUsed: 0,
                     isSubmitted: false,
                     history: [],
-                    finalScore: null
+                    finalScore: null,
+                    completionTime: null,
+                    lastActive: Date.now()
                 });
+                
+                this.startTimer();
             }
 
             async addPlayer(name) {
@@ -525,7 +697,8 @@
                     matches: {},
                     checksUsed: 0,
                     isSubmitted: false,
-                    createdAt: Date.now()
+                    createdAt: Date.now(),
+                    lastActive: Date.now()
                 });
                 alert('Player "' + name + '" added successfully!');
                 await this.loadAllPlayers();
@@ -539,6 +712,47 @@
                 this.render();
             }
 
+            async kickPlayer(playerId) {
+                if (!confirm('Kick this player from the game?')) return;
+                await db.ref('players/' + playerId).update({
+                    kicked: true,
+                    lastActive: Date.now()
+                });
+                await this.loadAllPlayers();
+                this.render();
+            }
+
+            async clearPlayerChoices(playerId) {
+                if (!confirm('Clear this player\'s choices?')) return;
+                await db.ref('players/' + playerId).update({
+                    matches: {},
+                    history: [],
+                    lastActive: Date.now()
+                });
+                await this.loadAllPlayers();
+                this.render();
+            }
+
+            async editPlayerMatch(playerId, clueId, employeeId) {
+                const playerRef = db.ref('players/' + playerId);
+                const snapshot = await playerRef.once('value');
+                const playerData = snapshot.val();
+                const matches = { ...playerData.matches };
+                
+                if (employeeId === null) {
+                    delete matches[clueId];
+                } else {
+                    matches[clueId] = employeeId;
+                }
+                
+                await playerRef.update({
+                    matches,
+                    lastActive: Date.now()
+                });
+                await this.loadAllPlayers();
+                this.render();
+            }
+
             async resetPlayerAdmin(playerId) {
                 if (!confirm('Reset this player\'s game?')) return;
                 await db.ref('players/' + playerId).update({
@@ -546,7 +760,9 @@
                     checksUsed: 0,
                     isSubmitted: false,
                     history: [],
-                    finalScore: null
+                    finalScore: null,
+                    completionTime: null,
+                    lastActive: Date.now()
                 });
                 await this.loadAllPlayers();
                 this.render();
@@ -604,31 +820,88 @@
             getLoginHTML() {
                 return `
                     <div class="flex items-center justify-center min-h-screen">
-                        <div class="race-game-border max-w-md w-full">
-                            <div class="race-game-inner p-8">
-                                <div class="race-game-header text-center">
-                                    ANIMAL GAME
-                                </div>
-                                <div class="mt-6 space-y-4">
+                        <div class="login-container">
+                            <div class="text-center mb-8">
+                                <h1 class="text-5xl font-black text-gray-900 mb-2">🐾 Animal Game</h1>
+                                <p class="text-xl text-gray-600 font-semibold">Who Said That?</p>
+                            </div>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700 mb-2">Your Name</label>
                                     <input
                                         type="text"
                                         id="nameInput"
-                                        placeholder="ENTER YOUR NAME"
-                                        class="token-input w-full px-4 py-3 rounded-lg"
+                                        placeholder="Enter your name"
+                                        class="login-input"
                                     />
-                                    <button
-                                        onclick="game.login()"
-                                        class="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-lg font-bold text-xl hover:shadow-lg"
-                                    >
-                                        START GAME
-                                    </button>
-                                    <button
-                                        onclick="game.showAdmin()"
-                                        class="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 text-black py-2 rounded-lg font-bold hover:shadow-lg"
-                                    >
-                                        ADMIN LOGIN
-                                    </button>
                                 </div>
+                                <button
+                                    onclick="game.login()"
+                                    class="login-button"
+                                    style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: white;"
+                                >
+                                    Start Playing
+                                </button>
+                                <button
+                                    onclick="game.showAdminLogin()"
+                                    class="login-button"
+                                    style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; margin-top: 0.5rem;"
+                                >
+                                    Admin Login
+                                </button>
+                            </div>
+                            
+                            <div class="mt-8 pt-6 border-t border-gray-200">
+                                <h3 class="text-sm font-bold text-gray-700 mb-3">Players Online</h3>
+                                <div class="space-y-2 max-h-48 overflow-y-auto">
+                                    ${this.state.allPlayers.map(player => {
+                                        const status = this.getPlayerStatus(player);
+                                        return `
+                                            <div class="flex items-center justify-between text-sm">
+                                                <span class="font-semibold text-gray-700">${player.name}</span>
+                                                <span class="status-badge status-${status}">${status}</span>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            getAdminLoginHTML() {
+                return `
+                    <div class="flex items-center justify-center min-h-screen">
+                        <div class="login-container">
+                            <div class="text-center mb-8">
+                                <h1 class="text-4xl font-black text-gray-900 mb-2">🔐 Admin Login</h1>
+                                <p class="text-lg text-gray-600 font-semibold">Sherry Morse</p>
+                            </div>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700 mb-2">Password</label>
+                                    <input
+                                        type="password"
+                                        id="adminPassword"
+                                        placeholder="Enter admin password"
+                                        class="login-input"
+                                    />
+                                </div>
+                                <button
+                                    onclick="game.loginAdmin()"
+                                    class="login-button"
+                                    style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white;"
+                                >
+                                    Login as Admin
+                                </button>
+                                <button
+                                    onclick="game.state.showAdminLogin = false; game.render();"
+                                    class="login-button"
+                                    style="background: #e5e7eb; color: #374151;"
+                                >
+                                    Back
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -637,16 +910,15 @@
 
             getAdminHTML() {
                 return `
-                    <div class="max-w-6xl mx-auto py-8">
+                    <div class="max-w-7xl mx-auto py-8">
                         <div class="admin-panel">
-                            <h1 class="text-4xl font-bold text-yellow-400 mb-6 text-center">ADMIN PANEL</h1>
-                            
-                            <div class="mb-6">
+                            <div class="flex items-center justify-between mb-6">
+                                <h1 class="text-4xl font-bold text-yellow-400">Admin Dashboard</h1>
                                 <button
-                                    onclick="game.state.isAdmin = false; game.render();"
-                                    class="bg-red-500 text-white px-4 py-2 rounded-lg font-bold"
+                                    onclick="game.logout()"
+                                    class="bg-red-500 text-white px-6 py-2 rounded-lg font-bold hover:bg-red-600"
                                 >
-                                    BACK TO LOGIN
+                                    Logout
                                 </button>
                             </div>
 
@@ -663,50 +935,74 @@
                                         onclick="game.addPlayer(document.getElementById('newPlayerName').value); document.getElementById('newPlayerName').value = '';"
                                         class="bg-green-500 text-white px-6 py-2 rounded-lg font-bold hover:bg-green-600"
                                     >
-                                        ADD PLAYER
+                                        Add Player
                                     </button>
                                 </div>
                             </div>
 
-                            <div class="overflow-x-auto">
-                                <h2 class="text-2xl font-bold text-yellow-400 mb-4">All Players</h2>
-                                <table class="w-full text-white">
-                                    <thead>
-                                        <tr class="border-b-2 border-yellow-400">
-                                            <th class="p-3 text-left">Name</th>
-                                            <th class="p-3 text-center">Matched</th>
-                                            <th class="p-3 text-center">Checks</th>
-                                            <th class="p-3 text-center">Submitted</th>
-                                            <th class="p-3 text-center">Score</th>
-                                            <th class="p-3 text-center">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${this.state.allPlayers.map(player => `
-                                            <tr class="border-b border-gray-700">
-                                                <td class="p-3">${player.name}</td>
-                                                <td class="p-3 text-center">${Object.keys(player.matches || {}).length} / ${EMPLOYEES.length}</td>
-                                                <td class="p-3 text-center">${player.checksUsed || 0} / 2</td>
-                                                <td class="p-3 text-center">${player.isSubmitted ? 'YES' : 'NO'}</td>
-                                                <td class="p-3 text-center">${player.finalScore !== null && player.finalScore !== undefined ? player.finalScore : '-'}</td>
-                                                <td class="p-3 text-center">
+                            <div class="space-y-4">
+                                <h2 class="text-2xl font-bold text-yellow-400">All Players</h2>
+                                ${this.state.allPlayers.map(player => {
+                                    const status = this.getPlayerStatus(player);
+                                    const matchCount = Object.keys(player.matches || {}).length;
+                                    return `
+                                        <div class="player-list-item">
+                                            <div class="flex items-start justify-between mb-3">
+                                                <div>
+                                                    <h3 class="text-xl font-bold text-white">${player.name}</h3>
+                                                    <div class="flex items-center gap-2 mt-1">
+                                                        <span class="status-badge status-${status}">${status}</span>
+                                                        <span class="text-gray-400 text-sm">Last active: ${this.getTimeSinceActive(player.lastActive || player.createdAt)}</span>
+                                                    </div>
+                                                </div>
+                                                <div class="flex gap-2">
                                                     <button
-                                                        onclick="game.resetPlayerAdmin('${player.id}')"
-                                                        class="bg-yellow-500 text-black px-3 py-1 rounded hover:bg-yellow-600 text-sm mr-2"
+                                                        onclick="game.clearPlayerChoices('${player.id}')"
+                                                        class="bg-orange-500 text-white px-3 py-1 rounded hover:bg-orange-600 text-sm font-bold"
                                                     >
-                                                        Reset
+                                                        Clear
+                                                    </button>
+                                                    <button
+                                                        onclick="game.kickPlayer('${player.id}')"
+                                                        class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-sm font-bold"
+                                                    >
+                                                        Kick
                                                     </button>
                                                     <button
                                                         onclick="game.deletePlayer('${player.id}')"
-                                                        class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-sm"
+                                                        class="bg-gray-700 text-white px-3 py-1 rounded hover:bg-gray-600 text-sm font-bold"
                                                     >
                                                         Delete
                                                     </button>
-                                                </td>
-                                            </tr>
-                                        `).join('')}
-                                    </tbody>
-                                </table>
+                                                </div>
+                                            </div>
+                                            <div class="grid grid-cols-4 gap-4 text-sm">
+                                                <div>
+                                                    <span class="text-gray-400">Progress:</span>
+                                                    <span class="text-white font-bold ml-2">${matchCount}/${EMPLOYEES.length}</span>
+                                                </div>
+                                                <div>
+                                                    <span class="text-gray-400">Checks:</span>
+                                                    <span class="text-white font-bold ml-2">${player.checksUsed || 0}/2</span>
+                                                </div>
+                                                <div>
+                                                    <span class="text-gray-400">Status:</span>
+                                                    <span class="text-white font-bold ml-2">${player.isSubmitted ? 'Completed' : 'In Progress'}</span>
+                                                </div>
+                                                <div>
+                                                    <span class="text-gray-400">Score:</span>
+                                                    <span class="text-white font-bold ml-2">${player.finalScore !== null && player.finalScore !== undefined ? player.finalScore + '/' + EMPLOYEES.length : '-'}</span>
+                                                </div>
+                                            </div>
+                                            ${player.completionTime ? `
+                                                <div class="mt-2 text-sm">
+                                                    <span class="text-gray-400">Completion Time:</span>
+                                                    <span class="text-white font-bold ml-2">${this.formatTime(player.completionTime)}</span>
+                                                </div>
+                                            ` : ''}
+                                        </div>
+                                    `;
+                                }).join('')}
                             </div>
                         </div>
                     </div>
@@ -720,6 +1016,10 @@
                 const canPullLever = matchCount === EMPLOYEES.length && checksRemaining > 0 && !this.state.playerData.isSubmitted;
 
                 let html = `
+                    <div class="timer-badge">
+                        ⏱️ <span id="timer">${this.formatTime(this.state.elapsedTime)}</span>
+                    </div>
+                    
                     <div class="max-w-7xl mx-auto py-8">
                         <div class="text-center mb-8">
                             <h1 class="text-6xl font-bold text-white mb-2" style="text-shadow: 3px 3px 0 #000, -1px -1px 0 #22c55e;">
@@ -732,22 +1032,34 @@
 
                 if (this.state.showLeverResult) {
                     html += `
-                        <div class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
-                            <div class="race-game-border" style="width: 600px;">
+                        <div class="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-50">
+                            <div class="race-game-border" style="width: 700px;">
                                 <div class="race-game-inner p-8">
                                     <div class="race-game-header text-center">
-                                        ${this.state.playerData.isSubmitted ? 'FINAL SCORE' : 'CHECK RESULTS'}
+                                        ${this.state.playerData.isSubmitted ? '🎉 FINAL RESULTS' : '✓ CHECK RESULTS'}
                                     </div>
                                     <div class="lcd-display active mt-6">
                                         ${this.state.correctCount}
                                     </div>
-                                    <div class="text-center text-2xl font-bold mt-6" style="color: #064e3b;">
-                                        CORRECT!
+                                    <div class="text-center text-3xl font-bold mt-6" style="color: #064e3b;">
+                                        CORRECT OUT OF ${EMPLOYEES.length}!
                                     </div>
                                     ${this.state.playerData.isSubmitted ? `
+                                        <div class="text-center text-2xl font-bold mt-4" style="color: #064e3b;">
+                                            Time: ${this.formatTime(this.state.playerData.completionTime)}
+                                        </div>
+                                        <div class="bg-yellow-100 border-4 border-yellow-500 rounded-lg p-6 mt-6">
+                                            <p class="text-center text-lg font-bold text-gray-900 mb-2">
+                                                📸 IMPORTANT!
+                                            </p>
+                                            <p class="text-center text-base font-semibold text-gray-800">
+                                                Please SCREENSHOT this screen and send it to<br>
+                                                <span class="text-blue-600">Sherry Morse</span> for validation!
+                                            </p>
+                                        </div>
                                         <button
                                             onclick="game.resetPlayer()"
-                                            class="w-full mt-6 bg-green-500 text-white py-3 rounded-lg font-bold text-xl hover:bg-green-600"
+                                            class="w-full mt-6 bg-green-500 text-white py-4 rounded-lg font-bold text-xl hover:bg-green-600"
                                         >
                                             PLAY AGAIN
                                         </button>
@@ -764,7 +1076,7 @@
                                 <div class="race-game-border">
                                     <div class="race-game-inner p-6">
                                         <div class="race-game-header">
-                                            ANIMALS AND QUOTES
+                                            🦁 ANIMALS & QUOTES
                                         </div>
                                         <div class="space-y-3 mt-6">
                 `;
@@ -772,8 +1084,8 @@
                 this.state.shuffledClues.forEach(clue => {
                     html += `
                         <div class="clue-card ${matches[clue.id] ? 'has-tag' : ''}" style="position: relative;">
-                            <div class="text-white font-bold text-lg mb-1">${clue.animal}</div>
-                            <div class="text-yellow-100 italic" style="max-width: calc(100% - 200px);">"${clue.quote}"</div>
+                            <div class="text-white font-bold text-lg mb-1">🐾 ${clue.animal}</div>
+                            <div class="text-yellow-100 italic" style="max-width: calc(100% - 240px);">"${clue.quote}"</div>
                     `;
 
                     if (matches[clue.id]) {
@@ -803,9 +1115,9 @@
                             <div>
                                 <div class="name-rack">
                                     <div class="race-game-header text-center" style="margin: -1.5rem -1.5rem 0 -1.5rem;">
-                                        NAME TAGS
+                                        🏷️ NAME TAGS
                                     </div>
-                                    <p class="text-center text-white mt-4 text-sm">Drag names to quotes</p>
+                                    <p class="text-center text-white mt-4 text-sm font-bold">Drag names to quotes</p>
                                     <div class="tag-container">
                 `;
 
@@ -889,27 +1201,52 @@
                     return;
                 }
 
-                const success = await this.initializePlayer(playerName);
+                const success = await this.initializePlayer(playerName, false);
                 if (success) {
                     this.render();
                 }
             }
 
-            async showAdmin() {
-                this.state.isAdmin = true;
-                await this.loadAllPlayers();
+            showAdminLogin() {
+                this.state.showAdminLogin = true;
                 this.render();
             }
 
-            render() {
+            async loginAdmin() {
+                const password = document.getElementById('adminPassword').value;
+                if (password !== ADMIN_PASSWORD) {
+                    alert('Incorrect password!');
+                    return;
+                }
+
+                const success = await this.initializePlayer(ADMIN_NAME, true);
+                if (success) {
+                    await this.loadAllPlayers();
+                    this.render();
+                }
+            }
+
+            logout() {
+                this.state.isAdmin = false;
+                this.state.playerId = null;
+                this.state.playerData = null;
+                this.state.showAdminLogin = false;
+                this.stopTimer();
+                this.render();
+            }
+
+            async render() {
                 const app = document.getElementById('app');
                 
-                if (this.state.isAdmin) {
+                if (this.state.showAdminLogin) {
+                    app.innerHTML = this.getAdminLoginHTML();
+                } else if (this.state.isAdmin && this.state.playerId) {
                     app.innerHTML = this.getAdminHTML();
                 } else if (this.state.playerId && this.state.playerData) {
                     app.innerHTML = this.getGameHTML();
                     setTimeout(() => this.setupDragAndDrop(), 100);
                 } else {
+                    await this.loadAllPlayers();
                     app.innerHTML = this.getLoginHTML();
                 }
             }
