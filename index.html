@@ -464,20 +464,34 @@
                 
                 this.initializeClues();
                 this.startPresenceTracking();
-                this.checkExistingSession();
-            }
-
-            async checkExistingSession() {
-                // Check if user has an active session
+                
+                // Check for existing session and render
                 const savedSession = sessionStorage.getItem('animalGameSession');
                 if (savedSession) {
-                    const session = JSON.parse(savedSession);
-                    await this.initializePlayer(session.name, session.isAdmin);
+                    try {
+                        const session = JSON.parse(savedSession);
+                        this.restoreSession(session);
+                    } catch (error) {
+                        console.error('Error restoring session:', error);
+                        sessionStorage.removeItem('animalGameSession');
+                        this.render();
+                    }
+                } else {
+                    this.render();
+                }
+            }
+
+            async restoreSession(session) {
+                const success = await this.initializePlayer(session.name, session.isAdmin);
+                if (success) {
                     if (session.isAdmin) {
                         await this.loadAllPlayers();
                     }
+                    this.render();
+                } else {
+                    sessionStorage.removeItem('animalGameSession');
+                    this.render();
                 }
-                this.render();
             }
 
             initializeClues() {
@@ -998,7 +1012,111 @@
                 `;
             }
 
-            getMiniAdminPanel() {
+            getAdminHTML() {
+                return `
+                    <div class="max-w-7xl mx-auto py-8">
+                        <div class="admin-panel" style="background: rgba(0,0,0,0.9); border: 3px solid #fbbf24; border-radius: 16px; padding: 1.5rem; backdrop-filter: blur(10px);">
+                            <div class="flex items-center justify-between mb-6">
+                                <div>
+                                    <h1 class="text-4xl font-bold text-white mb-2">Admin Dashboard</h1>
+                                    <p class="text-xl text-gray-300">Welcome, ${ADMIN_NAME}</p>
+                                </div>
+                            </div>
+
+                            <div class="mb-8 bg-gradient-to-r from-purple-900 to-pink-900 rounded-lg p-6 border-2 border-pink-500">
+                                <h2 class="text-2xl font-bold text-yellow-400 mb-4">Add New Player</h2>
+                                <div class="flex gap-4">
+                                    <input
+                                        type="text"
+                                        id="newPlayerName"
+                                        placeholder="Enter player name"
+                                        class="flex-1 px-4 py-3 rounded-lg bg-gray-800 text-white border-2 border-green-500 font-semibold"
+                                    />
+                                    <button
+                                        onclick="game.addPlayer(document.getElementById('newPlayerName').value); document.getElementById('newPlayerName').value = '';"
+                                        class="bg-green-500 text-white px-8 py-3 rounded-lg font-bold hover:bg-green-600 transition-all"
+                                    >
+                                        Add Player
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h2 class="text-3xl font-bold text-white">All Players</h2>
+                                    <button
+                                        onclick="game.logout()"
+                                        class="bg-red-500 text-white px-6 py-3 rounded-lg font-bold hover:bg-red-600 transition-all"
+                                    >
+                                        Logout
+                                    </button>
+                                </div>
+                                ${this.state.allPlayers.map(player => {
+                                    const status = this.getPlayerStatus(player);
+                                    const matchCount = Object.keys(player.matches || {}).length;
+                                    return `
+                                        <div class="player-list-item bg-gradient-to-r from-purple-800 to-indigo-800 border-2 border-purple-400">
+                                            <div class="flex items-start justify-between mb-3">
+                                                <div>
+                                                    <h3 class="text-2xl font-bold text-white">${player.name}</h3>
+                                                    <div class="flex items-center gap-3 mt-2">
+                                                        <span class="status-badge status-${status} text-sm">${status}</span>
+                                                        <span class="text-gray-300 text-sm font-semibold">Last active: ${this.getTimeSinceActive(player.lastActive || player.createdAt)}</span>
+                                                    </div>
+                                                </div>
+                                                <div class="flex gap-2">
+                                                    <button
+                                                        onclick="game.clearPlayerChoices('${player.id}')"
+                                                        class="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 text-sm font-bold transition-all"
+                                                    >
+                                                        Clear Choices
+                                                    </button>
+                                                    <button
+                                                        onclick="game.kickPlayer('${player.id}')"
+                                                        class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 text-sm font-bold transition-all"
+                                                    >
+                                                        Kick
+                                                    </button>
+                                                    <button
+                                                        onclick="game.deletePlayer('${player.id}')"
+                                                        class="bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600 text-sm font-bold transition-all"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="grid grid-cols-4 gap-4 text-sm bg-black bg-opacity-30 rounded-lg p-4">
+                                                <div>
+                                                    <span class="text-gray-300">Progress:</span>
+                                                    <span class="text-white font-bold ml-2 text-lg">${matchCount}/${EMPLOYEES.length}</span>
+                                                </div>
+                                                <div>
+                                                    <span class="text-gray-300">Checks Used:</span>
+                                                    <span class="text-white font-bold ml-2 text-lg">${player.checksUsed || 0}/2</span>
+                                                </div>
+                                                <div>
+                                                    <span class="text-gray-300">Status:</span>
+                                                    <span class="text-white font-bold ml-2 text-lg">${player.isSubmitted ? 'Completed' : 'In Progress'}</span>
+                                                </div>
+                                                <div>
+                                                    <span class="text-gray-300">Final Score:</span>
+                                                    <span class="text-white font-bold ml-2 text-lg">${player.finalScore !== null && player.finalScore !== undefined ? player.finalScore + '/' + EMPLOYEES.length : '-'}</span>
+                                                </div>
+                                            </div>
+                                            ${player.completionTime ? `
+                                                <div class="mt-3 text-sm bg-green-900 bg-opacity-50 rounded-lg p-3 border border-green-500">
+                                                    <span class="text-green-300 font-bold">Completion Time:</span>
+                                                    <span class="text-white font-bold ml-2 text-lg">${this.formatTime(player.completionTime)}</span>
+                                                </div>
+                                            ` : ''}
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
                 return `
                     <div class="admin-mini-panel">
                         <div class="admin-mini-header">
@@ -1431,6 +1549,8 @@
                         name: ADMIN_NAME,
                         isAdmin: true
                     }));
+                    // Start timer for admin too
+                    this.startTimer();
                     this.render();
                 }
             }
