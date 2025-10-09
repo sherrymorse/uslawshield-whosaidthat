@@ -464,42 +464,7 @@
                 
                 this.initializeClues();
                 this.startPresenceTracking();
-                
-                // Render immediately, then check for session
                 this.render();
-                
-                // Check for existing session after initial render
-                setTimeout(() => {
-                    const savedSession = sessionStorage.getItem('animalGameSession');
-                    if (savedSession) {
-                        try {
-                            const session = JSON.parse(savedSession);
-                            this.restoreSession(session);
-                        } catch (error) {
-                            console.error('Error restoring session:', error);
-                            sessionStorage.removeItem('animalGameSession');
-                        }
-                    }
-                }, 100);
-            }
-
-            async restoreSession(session) {
-                try {
-                    const success = await this.initializePlayer(session.name, session.isAdmin);
-                    if (success) {
-                        if (session.isAdmin) {
-                            await this.loadAllPlayers();
-                        }
-                        this.render();
-                    } else {
-                        sessionStorage.removeItem('animalGameSession');
-                        this.render();
-                    }
-                } catch (error) {
-                    console.error('Failed to restore session:', error);
-                    sessionStorage.removeItem('animalGameSession');
-                    this.render();
-                }
             }
 
             initializeClues() {
@@ -957,13 +922,6 @@
                                     style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;"
                                 >
                                     Start Playing
-                                </button>
-                                <button
-                                    onclick="sessionStorage.clear(); location.reload();"
-                                    class="login-button"
-                                    style="background: #e5e7eb; color: #374151; font-size: 0.875rem; padding: 0.75rem;"
-                                >
-                                    Clear Session & Reload
                                 </button>
                             </div>
                             
@@ -1536,11 +1494,6 @@
 
                 const success = await this.initializePlayer(playerName, false);
                 if (success) {
-                    // Save session
-                    sessionStorage.setItem('animalGameSession', JSON.stringify({
-                        name: playerName,
-                        isAdmin: false
-                    }));
                     this.render();
                 }
             }
@@ -1559,12 +1512,6 @@
                     await this.loadAllPlayers();
                     this.state.showAdminPassword = false;
                     this.state.tempAdminName = null;
-                    // Save admin session
-                    sessionStorage.setItem('animalGameSession', JSON.stringify({
-                        name: ADMIN_NAME,
-                        isAdmin: true
-                    }));
-                    // Start timer for admin too
                     this.startTimer();
                     this.render();
                 }
@@ -1579,8 +1526,6 @@
                     this.state.tempAdminName = null;
                     this.state.showAdminPanel = false;
                     this.stopTimer();
-                    // Clear session
-                    sessionStorage.removeItem('animalGameSession');
                     this.render();
                 }
             }
