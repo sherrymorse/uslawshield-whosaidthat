@@ -12,7 +12,7 @@
         
         body {
             font-family: 'Orbitron', sans-serif;
-            background: linear-gradient(135deg, #1e3a8a 0%, #7c3aed 50%, #db2777 100%);
+            background: linear-gradient(135deg, #0066cc 0%, #0099ff 50%, #00ccff 100%);
             min-height: 100vh;
         }
 
@@ -123,70 +123,102 @@
         }
 
         .clue-card {
-            background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
-            border: 4px solid #fbbf24;
+            background: linear-gradient(135deg, #0066cc 0%, #0099ff 100%);
+            border: 4px solid #22c55e;
             border-radius: 16px;
-            padding: 1rem;
+            padding: 1.5rem;
             box-shadow: 0 6px 20px rgba(0,0,0,0.3);
             transition: all 0.3s ease;
             position: relative;
+            min-height: 120px;
         }
 
         .clue-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
         }
 
-        .clue-card.matched {
-            border-color: #22c55e;
-            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+        .clue-card.has-tag {
+            border-color: #fbbf24;
         }
 
-        .arrow-line {
+        .drop-zone {
             position: absolute;
-            pointer-events: none;
-            z-index: 10;
-        }
-
-        .arrow-line line {
-            stroke: #fbbf24;
-            stroke-width: 4;
-            opacity: 1;
-            transition: opacity 0.3s;
-        }
-
-        .arrow-line.faded line {
-            opacity: 0.2;
-        }
-
-        .arrow-line polygon {
-            fill: #fbbf24;
-            opacity: 1;
-            transition: opacity 0.3s;
-        }
-
-        .arrow-line.faded polygon {
-            opacity: 0.2;
-        }
-
-        .employee-btn {
-            background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
-            border: 3px solid #fbbf24;
+            top: 10px;
+            right: 10px;
+            width: 180px;
+            height: 60px;
+            border: 3px dashed rgba(251, 191, 36, 0.5);
             border-radius: 12px;
-            padding: 1rem;
-            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
 
-        .employee-btn:hover:not(:disabled) {
+        .drop-zone.drag-over {
+            background: rgba(251, 191, 36, 0.2);
+            border-color: #fbbf24;
+            border-style: solid;
+        }
+
+        .drop-zone.filled {
+            border-style: solid;
+            border-color: #22c55e;
+        }
+
+        .neon-tag {
+            background: linear-gradient(135deg, #0066cc 0%, #0088ee 100%);
+            border: 3px solid #22c55e;
+            border-radius: 20px 20px 8px 8px;
+            padding: 0.75rem 1.25rem;
+            font-weight: 900;
+            font-size: 1.1rem;
+            color: #ffff00;
+            text-shadow: 0 0 10px #ffff00, 0 0 20px #ffff00;
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.6), 0 4px 8px rgba(0,0,0,0.4);
+            cursor: grab;
+            transition: all 0.3s ease;
+            text-align: center;
+            position: relative;
+            user-select: none;
+        }
+
+        .neon-tag:active {
+            cursor: grabbing;
+        }
+
+        .neon-tag:hover {
             transform: scale(1.05);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+            box-shadow: 0 0 25px rgba(34, 197, 94, 0.8), 0 6px 12px rgba(0,0,0,0.5);
         }
 
-        .employee-btn.assigned {
-            opacity: 0.6;
-            background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+        .neon-tag.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+
+        .neon-tag.placed {
+            cursor: pointer;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+
+        .name-rack {
+            background: linear-gradient(135deg, #004499 0%, #0066cc 100%);
+            border: 4px solid #22c55e;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            min-height: 400px;
+        }
+
+        .tag-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
         }
 
         .admin-panel {
@@ -212,14 +244,12 @@
     <div id="app" class="p-4 min-h-screen"></div>
 
     <script>
-        // Firebase Configuration
         const firebaseConfig = {
             databaseURL: "https://uslawshield-bingo-default-rtdb.firebaseio.com/"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // Employee data from your spreadsheet
         const EMPLOYEES = [
             { id: 1, name: "Carissa", animal: "Dolphin", quote: "Dolphins are intelligent, social and graceful. They work well in teams but still have their own sense of freedom and joy." },
             { id: 2, name: "Dory", animal: "Platypus", quote: "The more you learn about it, the weirder it is" },
@@ -244,7 +274,8 @@
                     leverPulled: false,
                     correctCount: 0,
                     shuffledClues: [],
-                    allPlayers: []
+                    allPlayers: [],
+                    draggedEmployeeId: null
                 };
                 
                 this.initializeClues();
@@ -265,7 +296,6 @@
                 let player = null;
                 let playerId = null;
 
-                // Check if player already exists
                 for (const [id, data] of Object.entries(players)) {
                     if (data.name && data.name.toLowerCase() === playerName.toLowerCase()) {
                         player = data;
@@ -274,7 +304,6 @@
                     }
                 }
 
-                // Create new player if doesn't exist
                 if (!player) {
                     const newPlayerRef = playersRef.push();
                     playerId = newPlayerRef.key;
@@ -296,7 +325,6 @@
                 this.state.playerId = playerId;
                 this.state.playerData = player;
 
-                // Listen for player updates
                 const self = this;
                 db.ref('players/' + playerId).on('value', (snapshot) => {
                     self.state.playerData = snapshot.val();
@@ -320,14 +348,11 @@
                 const matches = { ...this.state.playerData.matches };
                 const history = [...(this.state.playerData.history || [])];
                 
-                // Check if this employee is already assigned to another clue
                 const alreadyAssignedClue = Object.keys(matches).find(cId => matches[cId] === employeeId);
                 if (alreadyAssignedClue) {
-                    // Remove the old assignment
                     delete matches[alreadyAssignedClue];
                 }
                 
-                // Save to history for undo
                 history.push({ matches: { ...this.state.playerData.matches }, timestamp: Date.now() });
                 if (history.length > 3) history.shift();
 
@@ -337,9 +362,6 @@
                     matches,
                     history
                 });
-                
-                // Redraw arrows after state update
-                setTimeout(() => this.drawArrows(), 100);
             }
 
             async handleClear(clueId) {
@@ -357,9 +379,6 @@
                     matches,
                     history
                 });
-                
-                // Redraw arrows after state update
-                setTimeout(() => this.drawArrows(), 100);
             }
 
             async handleUndo() {
@@ -372,79 +391,6 @@
                 await db.ref('players/' + this.state.playerId).update({
                     matches: previousState.matches,
                     history
-                });
-                
-                // Redraw arrows after state update
-                setTimeout(() => this.drawArrows(), 100);
-            }
-
-            drawArrows() {
-                // Remove old arrows
-                const oldSvg = document.getElementById('arrow-svg');
-                if (oldSvg) oldSvg.remove();
-
-                if (!this.state.playerData || !this.state.playerData.matches) return;
-
-                const matches = this.state.playerData.matches;
-                if (Object.keys(matches).length === 0) return;
-
-                // Create SVG container
-                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                svg.id = 'arrow-svg';
-                svg.style.position = 'fixed';
-                svg.style.top = '0';
-                svg.style.left = '0';
-                svg.style.width = '100%';
-                svg.style.height = '100%';
-                svg.style.pointerEvents = 'none';
-                svg.style.zIndex = '5';
-                document.body.appendChild(svg);
-
-                // Draw arrows for each match
-                Object.keys(matches).forEach(clueId => {
-                    const employeeId = matches[clueId];
-                    const clueEl = document.querySelector('[data-clue-id="' + clueId + '"]');
-                    const empEl = document.querySelector('[data-employee-id="' + employeeId + '"]');
-
-                    if (clueEl && empEl) {
-                        const clueRect = clueEl.getBoundingClientRect();
-                        const empRect = empEl.getBoundingClientRect();
-
-                        const x1 = clueRect.right;
-                        const y1 = clueRect.top + clueRect.height / 2;
-                        const x2 = empRect.left;
-                        const y2 = empRect.top + empRect.height / 2;
-
-                        // Create arrow group
-                        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                        g.classList.add('arrow-line');
-                        g.classList.add('faded');
-
-                        // Create line
-                        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                        line.setAttribute('x1', x1);
-                        line.setAttribute('y1', y1);
-                        line.setAttribute('x2', x2);
-                        line.setAttribute('y2', y2);
-
-                        // Create arrowhead
-                        const angle = Math.atan2(y2 - y1, x2 - x1);
-                        const arrowSize = 12;
-                        const arrowX = x2;
-                        const arrowY = y2;
-
-                        const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-                        const points = [
-                            [arrowX, arrowY],
-                            [arrowX - arrowSize * Math.cos(angle - Math.PI / 6), arrowY - arrowSize * Math.sin(angle - Math.PI / 6)],
-                            [arrowX - arrowSize * Math.cos(angle + Math.PI / 6), arrowY - arrowSize * Math.sin(angle + Math.PI / 6)]
-                        ];
-                        polygon.setAttribute('points', points.map(p => p.join(',')).join(' '));
-
-                        g.appendChild(line);
-                        g.appendChild(polygon);
-                        svg.appendChild(g);
-                    }
                 });
             }
 
@@ -527,12 +473,10 @@
             }
 
             async addPlayer(name) {
-                // This is now just for admin to manually add/reset players if needed
                 const playersRef = db.ref('players');
                 const snapshot = await playersRef.once('value');
                 const players = snapshot.val() || {};
                 
-                // Check if player exists
                 for (const [id, data] of Object.entries(players)) {
                     if (data.name && data.name.toLowerCase() === name.toLowerCase()) {
                         alert('Player "' + name + '" already exists!');
@@ -571,6 +515,55 @@
                 });
                 await this.loadAllPlayers();
                 this.render();
+            }
+
+            setupDragAndDrop() {
+                const self = this;
+                
+                document.querySelectorAll('.neon-tag:not(.placed)').forEach(tag => {
+                    tag.addEventListener('dragstart', (e) => {
+                        const employeeId = parseInt(e.target.dataset.employeeId);
+                        self.state.draggedEmployeeId = employeeId;
+                        e.target.classList.add('dragging');
+                        e.dataTransfer.effectAllowed = 'move';
+                    });
+
+                    tag.addEventListener('dragend', (e) => {
+                        e.target.classList.remove('dragging');
+                        self.state.draggedEmployeeId = null;
+                    });
+                });
+
+                document.querySelectorAll('.drop-zone').forEach(zone => {
+                    zone.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = 'move';
+                        zone.classList.add('drag-over');
+                    });
+
+                    zone.addEventListener('dragleave', () => {
+                        zone.classList.remove('drag-over');
+                    });
+
+                    zone.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        zone.classList.remove('drag-over');
+                        
+                        if (self.state.draggedEmployeeId && !self.state.playerData.isSubmitted) {
+                            const clueId = parseInt(zone.dataset.clueId);
+                            self.handleMatch(clueId, self.state.draggedEmployeeId);
+                        }
+                    });
+                });
+
+                document.querySelectorAll('.neon-tag.placed').forEach(tag => {
+                    tag.addEventListener('click', () => {
+                        if (!self.state.playerData.isSubmitted) {
+                            const clueId = parseInt(tag.dataset.clueId);
+                            self.handleClear(clueId);
+                        }
+                    });
+                });
             }
 
             renderLogin() {
@@ -695,11 +688,11 @@
                 return `
                     <div class="max-w-7xl mx-auto py-8">
                         <div class="text-center mb-8">
-                            <h1 class="text-6xl font-bold text-yellow-300 mb-2" style="text-shadow: 3px 3px 0 #000, -1px -1px 0 #fff;">
+                            <h1 class="text-6xl font-bold text-white mb-2" style="text-shadow: 3px 3px 0 #000, -1px -1px 0 #22c55e;">
                                 ANIMAL GAME
                             </h1>
-                            <p class="text-2xl text-white font-bold">Who Said That?</p>
-                            <p class="text-xl text-yellow-200 mt-2">Welcome, ${this.state.playerData.name}!</p>
+                            <p class="text-2xl text-yellow-300 font-bold">Who Said That?</p>
+                            <p class="text-xl text-white mt-2">Welcome, ${this.state.playerData.name}!</p>
                         </div>
 
                         ${this.state.showLeverResult ? `
@@ -737,143 +730,8 @@
                                         </div>
                                         <div class="space-y-3 mt-6">
                                             ${this.state.shuffledClues.map(clue => `
-                                                <div class="clue-card ${matches[clue.id] ? 'matched' : ''}">
+                                                <div class="clue-card ${matches[clue.id] ? 'has-tag' : ''}" style="position: relative;">
                                                     <div class="text-white font-bold text-lg mb-1">🐾 ${clue.animal}</div>
-                                                    <div class="text-yellow-100 italic">"${clue.quote}"</div>
+                                                    <div class="text-yellow-100 italic" style="max-width: calc(100% - 200px);">"${clue.quote}"</div>
+                                                    
                                                     ${matches[clue.id] ? `
-                                                        <div class="mt-2 flex items-center justify-between">
-                                                            <span class="text-white font-bold">
-                                                                ✓ ${EMPLOYEES.find(e => e.id === matches[clue.id]).name}
-                                                            </span>
-                                                            ${!this.state.playerData.isSubmitted ? `
-                                                                <button
-                                                                    onclick="game.handleClear(${clue.id})"
-                                                                    class="bg-red-500 text-white px-3 py-1 rounded font-bold hover:bg-red-600"
-                                                                >
-                                                                    CLEAR
-                                                                </button>
-                                                            ` : ''}
-                                                        </div>
-                                                    ` : ''}
-                                                </div>
-                                            `).join('')}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div>
-                                <div class="race-game-border">
-                                    <div class="race-game-inner p-6">
-                                        <div class="race-game-header">
-                                            👥 EMPLOYEES
-                                        </div>
-                                        <div class="grid grid-cols-1 gap-3 mt-6">
-                                            ${EMPLOYEES.map(employee => {
-                                                const isAssigned = Object.values(matches).includes(employee.id);
-                                                const unmatched = this.state.shuffledClues.find(c => !matches[c.id]);
-                                                return `
-                                                    <button
-                                                        onclick="game.handleMatch(${unmatched ? unmatched.id : 'null'}, ${employee.id})"
-                                                        ${this.state.playerData.isSubmitted || !unmatched ? 'disabled' : ''}
-                                                        class="employee-btn text-white ${isAssigned ? 'assigned' : ''}"
-                                                    >
-                                                        ${employee.name}
-                                                        ${isAssigned ? '<div class="text-xs mt-1">✓ ASSIGNED</div>' : ''}
-                                                    </button>
-                                                `;
-                                            }).join('')}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="race-game-border">
-                            <div class="race-game-inner p-6">
-                                <div class="flex flex-wrap items-center justify-center gap-8">
-                                    <div class="text-center">
-                                        <div class="lever-container" style="cursor: ${canPullLever ? 'pointer' : 'not-allowed'};" onclick="${canPullLever ? 'game.pullLever()' : ''}">
-                                            <div class="lever-arm ${this.state.leverPulled ? 'pulled' : ''}">
-                                                <div class="lever-handle"></div>
-                                            </div>
-                                            <div class="lever-base"></div>
-                                        </div>
-                                        <div class="mt-4 text-sm font-bold" style="color: #064e3b;">
-                                            PULL TO CHECK<br>
-                                            (${checksRemaining} checks left)
-                                        </div>
-                                    </div>
-
-                                    <div class="flex flex-col gap-4">
-                                        <div class="text-center text-2xl font-bold" style="color: #064e3b;">
-                                            MATCHED: ${matchCount} / ${EMPLOYEES.length}
-                                        </div>
-                                        
-                                        <button
-                                            onclick="game.submitFinal()"
-                                            ${this.state.playerData.isSubmitted || matchCount !== EMPLOYEES.length ? 'disabled' : ''}
-                                            class="bg-green-500 text-white px-8 py-4 rounded-xl font-bold text-xl hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            SUBMIT FINAL
-                                        </button>
-
-                                        <button
-                                            onclick="game.handleUndo()"
-                                            ${this.state.playerData.isSubmitted || !this.state.playerData.history || this.state.playerData.history.length === 0 ? 'disabled' : ''}
-                                            class="bg-yellow-500 text-black px-8 py-3 rounded-xl font-bold hover:bg-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            UNDO LAST (${this.state.playerData.history ? this.state.playerData.history.length : 0})
-                                        </button>
-
-                                        <button
-                                            onclick="game.resetPlayer()"
-                                            class="bg-red-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-red-600"
-                                        >
-                                            RESET GAME
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-
-            async login() {
-                const playerName = document.getElementById('nameInput').value.trim();
-                if (!playerName) {
-                    alert('Please enter your name!');
-                    return;
-                }
-
-                this.state.playerToken = playerName;
-                const success = await this.initializePlayer(playerName);
-                if (success) {
-                    this.render();
-                }
-            }
-
-            async showAdmin() {
-                this.state.isAdmin = true;
-                await this.loadAllPlayers();
-                this.render();
-            }
-
-            render() {
-                const app = document.getElementById('app');
-                
-                if (this.state.isAdmin) {
-                    app.innerHTML = this.renderAdminPanel();
-                } else if (this.state.playerId && this.state.playerData) {
-                    app.innerHTML = this.renderGame();
-                } else {
-                    app.innerHTML = this.renderLogin();
-                }
-            }
-        }
-
-        const game = new AnimalGame();
-    </script>
-</body>
-</html>
