@@ -597,7 +597,7 @@
                     const self = this;
                     db.ref('players/' + playerId).on('value', (snapshot) => {
                         self.state.playerData = snapshot.val();
-                        self.render();
+                        // Don't re-render on every update to avoid loops
                     });
 
                     if (!isAdmin) {
