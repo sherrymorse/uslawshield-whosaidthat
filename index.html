@@ -241,7 +241,7 @@
     </style>
 </head>
 <body>
-    <div id="app" class="p-4 min-h-screen"></div>
+    <div id="app" class="p-4 min-h-screen">Loading...</div>
 
     <script>
         const firebaseConfig = {
@@ -267,7 +267,6 @@
             constructor() {
                 this.state = {
                     isAdmin: false,
-                    playerToken: '',
                     playerId: null,
                     playerData: null,
                     showLeverResult: false,
@@ -283,55 +282,63 @@
             }
 
             initializeClues() {
-                this.state.shuffledClues = [...EMPLOYEES]
-                    .map(emp => ({ id: emp.id, animal: emp.animal, quote: emp.quote }))
-                    .sort(() => Math.random() - 0.5);
+                this.state.shuffledClues = EMPLOYEES.map(emp => ({ 
+                    id: emp.id, 
+                    animal: emp.animal, 
+                    quote: emp.quote 
+                })).sort(() => Math.random() - 0.5);
             }
 
             async initializePlayer(playerName) {
-                const playersRef = db.ref('players');
-                const snapshot = await playersRef.once('value');
-                const players = snapshot.val() || {};
-                
-                let player = null;
-                let playerId = null;
+                try {
+                    const playersRef = db.ref('players');
+                    const snapshot = await playersRef.once('value');
+                    const players = snapshot.val() || {};
+                    
+                    let player = null;
+                    let playerId = null;
 
-                for (const [id, data] of Object.entries(players)) {
-                    if (data.name && data.name.toLowerCase() === playerName.toLowerCase()) {
-                        player = data;
-                        playerId = id;
-                        break;
+                    for (const [id, data] of Object.entries(players)) {
+                        if (data.name && data.name.toLowerCase() === playerName.toLowerCase()) {
+                            player = data;
+                            playerId = id;
+                            break;
+                        }
                     }
-                }
 
-                if (!player) {
-                    const newPlayerRef = playersRef.push();
-                    playerId = newPlayerRef.key;
-                    await newPlayerRef.set({
-                        name: playerName,
-                        matches: {},
-                        checksUsed: 0,
-                        isSubmitted: false,
-                        createdAt: Date.now()
+                    if (!player) {
+                        const newPlayerRef = playersRef.push();
+                        playerId = newPlayerRef.key;
+                        await newPlayerRef.set({
+                            name: playerName,
+                            matches: {},
+                            checksUsed: 0,
+                            isSubmitted: false,
+                            createdAt: Date.now()
+                        });
+                        player = {
+                            name: playerName,
+                            matches: {},
+                            checksUsed: 0,
+                            isSubmitted: false
+                        };
+                    }
+
+                    this.state.playerId = playerId;
+                    this.state.playerData = player;
+
+                    const self = this;
+                    db.ref('players/' + playerId).on('value', (snapshot) => {
+                        self.state.playerData = snapshot.val();
+                        self.render();
                     });
-                    player = {
-                        name: playerName,
-                        matches: {},
-                        checksUsed: 0,
-                        isSubmitted: false
-                    };
+
+                    return true;
+                } catch (error) {
+                    console.error('Error initializing player:', error);
+                    alert('Error connecting to database. Please try again.');
+                    return false;
                 }
-
-                this.state.playerId = playerId;
-                this.state.playerData = player;
-
-                const self = this;
-                db.ref('players/' + playerId).on('value', (snapshot) => {
-                    self.state.playerData = snapshot.val();
-                    self.render();
-                });
-
-                return true;
             }
 
             async loadAllPlayers() {
@@ -505,7 +512,7 @@
             }
 
             async resetPlayerAdmin(playerId) {
-                if (!confirm('Reset this player\'s game? This will clear their progress.')) return;
+                if (!confirm('Reset this player\'s game?')) return;
                 await db.ref('players/' + playerId).update({
                     matches: {},
                     checksUsed: 0,
@@ -566,7 +573,7 @@
                 });
             }
 
-            renderLogin() {
+            getLoginHTML() {
                 return `
                     <div class="flex items-center justify-center min-h-screen">
                         <div class="race-game-border max-w-md w-full">
@@ -600,7 +607,7 @@
                 `;
             }
 
-            renderAdminPanel() {
+            getAdminHTML() {
                 return `
                     <div class="max-w-6xl mx-auto py-8">
                         <div class="admin-panel">
@@ -611,12 +618,12 @@
                                     onclick="game.state.isAdmin = false; game.render();"
                                     class="bg-red-500 text-white px-4 py-2 rounded-lg font-bold"
                                 >
-                                    ← BACK TO LOGIN
+                                    BACK TO LOGIN
                                 </button>
                             </div>
 
                             <div class="mb-8 bg-gray-900 rounded-lg p-4">
-                                <h2 class="text-2xl font-bold text-yellow-400 mb-4">Add/Reset Player</h2>
+                                <h2 class="text-2xl font-bold text-yellow-400 mb-4">Add Player</h2>
                                 <div class="flex gap-4">
                                     <input
                                         type="text"
@@ -631,7 +638,6 @@
                                         ADD PLAYER
                                     </button>
                                 </div>
-                                <p class="text-gray-400 text-sm mt-2">Note: Players are auto-created when they enter their name. Use this to manually add or verify players.</p>
                             </div>
 
                             <div class="overflow-x-auto">
@@ -641,9 +647,9 @@
                                         <tr class="border-b-2 border-yellow-400">
                                             <th class="p-3 text-left">Name</th>
                                             <th class="p-3 text-center">Matched</th>
-                                            <th class="p-3 text-center">Checks Used</th>
+                                            <th class="p-3 text-center">Checks</th>
                                             <th class="p-3 text-center">Submitted</th>
-                                            <th class="p-3 text-center">Final Score</th>
+                                            <th class="p-3 text-center">Score</th>
                                             <th class="p-3 text-center">Actions</th>
                                         </tr>
                                     </thead>
@@ -653,7 +659,7 @@
                                                 <td class="p-3">${player.name}</td>
                                                 <td class="p-3 text-center">${Object.keys(player.matches || {}).length} / ${EMPLOYEES.length}</td>
                                                 <td class="p-3 text-center">${player.checksUsed || 0} / 2</td>
-                                                <td class="p-3 text-center">${player.isSubmitted ? '✓' : '✗'}</td>
+                                                <td class="p-3 text-center">${player.isSubmitted ? 'YES' : 'NO'}</td>
                                                 <td class="p-3 text-center">${player.finalScore !== null && player.finalScore !== undefined ? player.finalScore : '-'}</td>
                                                 <td class="p-3 text-center">
                                                     <button
@@ -679,13 +685,13 @@
                 `;
             }
 
-            renderGame() {
+            getGameHTML() {
                 const matches = this.state.playerData.matches || {};
                 const matchCount = Object.keys(matches).length;
                 const checksRemaining = 2 - (this.state.playerData.checksUsed || 0);
                 const canPullLever = matchCount === EMPLOYEES.length && checksRemaining > 0 && !this.state.playerData.isSubmitted;
 
-                return `
+                let html = `
                     <div class="max-w-7xl mx-auto py-8">
                         <div class="text-center mb-8">
                             <h1 class="text-6xl font-bold text-white mb-2" style="text-shadow: 3px 3px 0 #000, -1px -1px 0 #22c55e;">
@@ -694,44 +700,194 @@
                             <p class="text-2xl text-yellow-300 font-bold">Who Said That?</p>
                             <p class="text-xl text-white mt-2">Welcome, ${this.state.playerData.name}!</p>
                         </div>
+                `;
 
-                        ${this.state.showLeverResult ? `
-                            <div class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
-                                <div class="race-game-border" style="width: 600px;">
-                                    <div class="race-game-inner p-8">
-                                        <div class="race-game-header text-center">
-                                            ${this.state.playerData.isSubmitted ? 'FINAL SCORE' : 'CHECK RESULTS'}
-                                        </div>
-                                        <div class="lcd-display active mt-6">
-                                            ${this.state.correctCount}
-                                        </div>
-                                        <div class="text-center text-2xl font-bold mt-6" style="color: #064e3b;">
-                                            CORRECT!
-                                        </div>
-                                        ${this.state.playerData.isSubmitted ? `
-                                            <button
-                                                onclick="game.resetPlayer()"
-                                                class="w-full mt-6 bg-green-500 text-white py-3 rounded-lg font-bold text-xl hover:bg-green-600"
-                                            >
-                                                PLAY AGAIN
-                                            </button>
-                                        ` : ''}
+                if (this.state.showLeverResult) {
+                    html += `
+                        <div class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
+                            <div class="race-game-border" style="width: 600px;">
+                                <div class="race-game-inner p-8">
+                                    <div class="race-game-header text-center">
+                                        ${this.state.playerData.isSubmitted ? 'FINAL SCORE' : 'CHECK RESULTS'}
                                     </div>
+                                    <div class="lcd-display active mt-6">
+                                        ${this.state.correctCount}
+                                    </div>
+                                    <div class="text-center text-2xl font-bold mt-6" style="color: #064e3b;">
+                                        CORRECT!
+                                    </div>
+                                    ${this.state.playerData.isSubmitted ? `
+                                        <button
+                                            onclick="game.resetPlayer()"
+                                            class="w-full mt-6 bg-green-500 text-white py-3 rounded-lg font-bold text-xl hover:bg-green-600"
+                                        >
+                                            PLAY AGAIN
+                                        </button>
+                                    ` : ''}
                                 </div>
                             </div>
-                        ` : ''}
+                        </div>
+                    `;
+                }
 
+                html += `
                         <div class="grid lg:grid-cols-3 gap-8 mb-8">
                             <div class="lg:col-span-2">
                                 <div class="race-game-border">
                                     <div class="race-game-inner p-6">
                                         <div class="race-game-header">
-                                            🦁 ANIMALS & QUOTES
+                                            ANIMALS AND QUOTES
                                         </div>
                                         <div class="space-y-3 mt-6">
-                                            ${this.state.shuffledClues.map(clue => `
-                                                <div class="clue-card ${matches[clue.id] ? 'has-tag' : ''}" style="position: relative;">
-                                                    <div class="text-white font-bold text-lg mb-1">🐾 ${clue.animal}</div>
-                                                    <div class="text-yellow-100 italic" style="max-width: calc(100% - 200px);">"${clue.quote}"</div>
-                                                    
-                                                    ${matches[clue.id] ? `
+                `;
+
+                this.state.shuffledClues.forEach(clue => {
+                    html += `
+                        <div class="clue-card ${matches[clue.id] ? 'has-tag' : ''}" style="position: relative;">
+                            <div class="text-white font-bold text-lg mb-1">${clue.animal}</div>
+                            <div class="text-yellow-100 italic" style="max-width: calc(100% - 200px);">"${clue.quote}"</div>
+                    `;
+
+                    if (matches[clue.id]) {
+                        const emp = EMPLOYEES.find(e => e.id === matches[clue.id]);
+                        html += `
+                            <div class="neon-tag placed" data-clue-id="${clue.id}" data-employee-id="${matches[clue.id]}">
+                                ${emp.name}
+                            </div>
+                        `;
+                    } else {
+                        html += `
+                            <div class="drop-zone" data-clue-id="${clue.id}">
+                                <span style="color: rgba(251, 191, 36, 0.5); font-size: 0.9rem;">Drop name here</span>
+                            </div>
+                        `;
+                    }
+
+                    html += `</div>`;
+                });
+
+                html += `
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="name-rack">
+                                    <div class="race-game-header text-center" style="margin: -1.5rem -1.5rem 0 -1.5rem;">
+                                        NAME TAGS
+                                    </div>
+                                    <p class="text-center text-white mt-4 text-sm">Drag names to quotes</p>
+                                    <div class="tag-container">
+                `;
+
+                EMPLOYEES.forEach(employee => {
+                    const isAssigned = Object.values(matches).includes(employee.id);
+                    if (isAssigned && !this.state.playerData.isSubmitted) return;
+                    
+                    html += `
+                        <div class="neon-tag" 
+                             draggable="${!this.state.playerData.isSubmitted && !isAssigned}"
+                             data-employee-id="${employee.id}"
+                             style="${isAssigned ? 'opacity: 0.3; cursor: not-allowed;' : ''}">
+                            ${employee.name}
+                        </div>
+                    `;
+                });
+
+                html += `
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="race-game-border">
+                            <div class="race-game-inner p-6">
+                                <div class="flex flex-wrap items-center justify-center gap-8">
+                                    <div class="text-center">
+                                        <div class="lever-container" style="cursor: ${canPullLever ? 'pointer' : 'not-allowed'};" onclick="${canPullLever ? 'game.pullLever()' : ''}">
+                                            <div class="lever-arm ${this.state.leverPulled ? 'pulled' : ''}">
+                                                <div class="lever-handle"></div>
+                                            </div>
+                                            <div class="lever-base"></div>
+                                        </div>
+                                        <div class="mt-4 text-sm font-bold" style="color: #064e3b;">
+                                            PULL TO CHECK<br>
+                                            (${checksRemaining} checks left)
+                                        </div>
+                                    </div>
+
+                                    <div class="flex flex-col gap-4">
+                                        <div class="text-center text-2xl font-bold" style="color: #064e3b;">
+                                            MATCHED: ${matchCount} / ${EMPLOYEES.length}
+                                        </div>
+                                        
+                                        <button
+                                            onclick="game.submitFinal()"
+                                            ${this.state.playerData.isSubmitted || matchCount !== EMPLOYEES.length ? 'disabled' : ''}
+                                            class="bg-green-500 text-white px-8 py-4 rounded-xl font-bold text-xl hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            SUBMIT FINAL
+                                        </button>
+
+                                        <button
+                                            onclick="game.handleUndo()"
+                                            ${this.state.playerData.isSubmitted || !this.state.playerData.history || this.state.playerData.history.length === 0 ? 'disabled' : ''}
+                                            class="bg-yellow-500 text-black px-8 py-3 rounded-xl font-bold hover:bg-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            UNDO (${this.state.playerData.history ? this.state.playerData.history.length : 0})
+                                        </button>
+
+                                        <button
+                                            onclick="game.resetPlayer()"
+                                            class="bg-red-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-red-600"
+                                        >
+                                            RESET GAME
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                return html;
+            }
+
+            async login() {
+                const playerName = document.getElementById('nameInput').value.trim();
+                if (!playerName) {
+                    alert('Please enter your name!');
+                    return;
+                }
+
+                const success = await this.initializePlayer(playerName);
+                if (success) {
+                    this.render();
+                }
+            }
+
+            async showAdmin() {
+                this.state.isAdmin = true;
+                await this.loadAllPlayers();
+                this.render();
+            }
+
+            render() {
+                const app = document.getElementById('app');
+                
+                if (this.state.isAdmin) {
+                    app.innerHTML = this.getAdminHTML();
+                } else if (this.state.playerId && this.state.playerData) {
+                    app.innerHTML = this.getGameHTML();
+                    setTimeout(() => this.setupDragAndDrop(), 100);
+                } else {
+                    app.innerHTML = this.getLoginHTML();
+                }
+            }
+        }
+
+        const game = new AnimalGame();
+    </script>
+</body>
+</html>
