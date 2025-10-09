@@ -1403,6 +1403,11 @@
 
                 const success = await this.initializePlayer(playerName, false);
                 if (success) {
+                    // Save session
+                    sessionStorage.setItem('animalGameSession', JSON.stringify({
+                        name: playerName,
+                        isAdmin: false
+                    }));
                     this.render();
                 }
             }
@@ -1421,6 +1426,11 @@
                     await this.loadAllPlayers();
                     this.state.showAdminPassword = false;
                     this.state.tempAdminName = null;
+                    // Save admin session
+                    sessionStorage.setItem('animalGameSession', JSON.stringify({
+                        name: ADMIN_NAME,
+                        isAdmin: true
+                    }));
                     this.render();
                 }
             }
@@ -1432,7 +1442,10 @@
                     this.state.playerData = null;
                     this.state.showAdminPassword = false;
                     this.state.tempAdminName = null;
+                    this.state.showAdminPanel = false;
                     this.stopTimer();
+                    // Clear session
+                    sessionStorage.removeItem('animalGameSession');
                     this.render();
                 }
             }
