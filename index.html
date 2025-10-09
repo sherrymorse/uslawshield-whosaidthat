@@ -12,11 +12,15 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Poppins:wght@400;600;700;800;900&display=swap');
-        *, *::before, *::after {
+
+        *,
+        *::before,
+        *::after {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
+
         body {
             font-family: 'Poppins', sans-serif;
             background: linear-gradient(135deg, #1e40af 0%, #7c3aed 50%, #ec4899 100%);
@@ -24,17 +28,20 @@
             min-height: 100vh;
             line-height: 1.5;
         }
+
         .race-game-border {
             background: linear-gradient(to bottom, #8b5cf6, #7c3aed);
             border-radius: 24px;
             padding: 6px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
+
         .race-game-inner {
             background: white;
             border-radius: 20px;
             border: 4px solid #10b981;
         }
+
         .race-game-header {
             background: linear-gradient(135deg, #ec4899, #f43f5e);
             border-radius: 18px 18px 0 0;
@@ -46,6 +53,7 @@
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
             letter-spacing: 0.05em;
         }
+
         .lcd-display {
             background: #000;
             border: 6px solid #22c55e;
@@ -63,21 +71,25 @@
             align-items: center;
             justify-content: center;
         }
+
         .lcd-display.active {
             color: #00ff00;
             text-shadow: 0 0 20px #00ff00, 0 0 40px #00ff00;
             animation: glow 0.5s ease-in-out;
         }
+
         @keyframes glow {
             0%, 100% { text-shadow: 0 0 10px #00ff00; }
             50% { text-shadow: 0 0 40px #00ff00, 0 0 60px #00ff00; }
         }
+
         .lever-container {
             position: relative;
             width: 80px;
             height: 200px;
             margin: 0 auto;
         }
+
         .lever-base {
             position: absolute;
             bottom: 0;
@@ -90,6 +102,7 @@
             border: 3px solid #fbbf24;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
+
         .lever-arm {
             position: absolute;
             bottom: 35px;
@@ -104,9 +117,11 @@
             cursor: pointer;
             border: 2px solid #a3a3a3;
         }
+
         .lever-arm.pulled {
             transform: translateX(-50%) rotate(-45deg);
         }
+
         .lever-handle {
             position: absolute;
             top: -30px;
@@ -119,6 +134,7 @@
             border: 4px solid #fbbf24;
             box-shadow: 0 4px 8px rgba(0,0,0,0.4);
         }
+
         .clue-card {
             background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
             border: 3px solid #10b981;
@@ -131,13 +147,16 @@
             display: flex;
             flex-direction: column;
         }
+
         .clue-card:hover {
             box-shadow: 0 6px 20px rgba(0,0,0,0.4);
         }
+
         .clue-card.has-tag {
             border-color: #fbbf24;
             border-width: 4px;
         }
+
         .animal-name {
             font-size: 1.75rem;
             font-weight: 800;
@@ -145,14 +164,15 @@
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
             margin-bottom: 0.75rem;
         }
+
         .quote-text {
             font-size: 1.125rem;
             font-weight: 500;
             color: #f3f4f6;
             line-height: 1.6;
             flex-grow: 1;
-            max-width: calc(100% - 240px);
         }
+
         .drop-zone {
             position: absolute;
             top: 10px;
@@ -167,12 +187,14 @@
             transition: all 0.2s ease;
             background: rgba(0,0,0,0.1);
         }
+
         .drop-zone.drag-over {
             background: rgba(255, 255, 0, 0.2);
             border-color: #ffff00;
             border-style: solid;
             border-width: 4px;
         }
+
         .neon-tag {
             background: linear-gradient(180deg, #ffff00 0%, #ffed4e 100%);
             border: 4px solid #000;
@@ -191,6 +213,7 @@
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
+
         .neon-tag::before {
             content: '';
             position: absolute;
@@ -202,19 +225,23 @@
             border-radius: 50%;
             border: 3px solid #ffff00;
         }
+
         .neon-tag:active {
             cursor: grabbing;
             transform: translateY(4px);
             box-shadow: 0 4px 0 #cc0000, 0 6px 15px rgba(0,0,0,0.5);
         }
+
         .neon-tag:hover:not(.placed) {
             transform: translateY(-4px) scale(1.05);
             box-shadow: 0 12px 0 #cc0000, 0 14px 30px rgba(0,0,0,0.6);
         }
+
         .neon-tag.dragging {
             opacity: 0.7;
             cursor: grabbing;
         }
+
         .neon-tag.placed {
             cursor: pointer;
             position: absolute;
@@ -222,13 +249,16 @@
             right: 10px;
             box-shadow: 0 6px 0 #22c55e, 0 8px 20px rgba(0,0,0,0.5);
         }
+
         .neon-tag.placed::before {
             border-color: #22c55e;
         }
+
         .neon-tag.placed:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 0 #22c55e, 0 10px 25px rgba(0,0,0,0.6);
         }
+
         .name-rack {
             background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
             border: 3px solid #10b981;
@@ -237,12 +267,14 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
             min-height: 400px;
         }
+
         .tag-container {
             display: grid;
             grid-template-columns: repeat(1, 1fr);
             gap: 1.5rem;
             margin-top: 1.5rem;
         }
+
         .timer-badge {
             position: fixed;
             top: 20px;
@@ -258,6 +290,7 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.5);
             z-index: 100;
         }
+
         .status-badge {
             display: inline-block;
             padding: 0.25rem 0.75rem;
@@ -266,18 +299,22 @@
             font-weight: 700;
             text-transform: uppercase;
         }
+
         .status-active {
             background: #10b981;
             color: white;
         }
+
         .status-idle {
             background: #f59e0b;
             color: white;
         }
+
         .status-completed {
             background: #ec4899;
             color: white;
         }
+
         .login-container {
             background: white;
             border-radius: 24px;
@@ -286,6 +323,7 @@
             max-width: 480px;
             width: 100%;
         }
+
         .login-input {
             width: 100%;
             padding: 1rem 1.5rem;
@@ -295,11 +333,13 @@
             font-weight: 600;
             transition: all 0.2s;
         }
+
         .login-input:focus {
             outline: none;
             border-color: #0ea5e9;
             box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
         }
+
         .login-button {
             width: 100%;
             padding: 1rem 2rem;
@@ -312,10 +352,12 @@
             transition: all 0.2s;
             letter-spacing: 0.05em;
         }
+
         .login-button:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 20px rgba(0,0,0,0.3);
         }
+
         .admin-mini-panel {
             position: fixed;
             bottom: 20px;
@@ -331,6 +373,7 @@
             overflow-y: auto;
             box-shadow: 0 10px 40px rgba(0,0,0,0.7);
         }
+
         .admin-mini-header {
             display: flex;
             justify-content: space-between;
@@ -339,6 +382,7 @@
             padding-bottom: 0.75rem;
             border-bottom: 2px solid #fbbf24;
         }
+
         .admin-toggle-btn {
             position: fixed;
             bottom: 20px;
@@ -354,10 +398,12 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.5);
             transition: all 0.2s;
         }
+
         .admin-toggle-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 16px rgba(0,0,0,0.6);
         }
+
         .mini-player-card {
             background: rgba(124, 58, 237, 0.3);
             border: 1px solid rgba(124, 58, 237, 0.5);
@@ -366,9 +412,11 @@
             margin-bottom: 0.5rem;
             font-size: 0.875rem;
         }
+
         .mini-player-card:hover {
             background: rgba(124, 58, 237, 0.5);
         }
+
         .animal-image {
             width: 100px;
             height: 100px;
@@ -388,8 +436,10 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+
         const ADMIN_PASSWORD = "Airport-1";
         const ADMIN_NAME = "Sherry Morse";
+
         const ANIMAL_IMAGES = {
             bear: 'https://i.imgur.com/vJFKVHw.png',
             dolphin1: 'https://i.imgur.com/C0aMQRo.png',
@@ -402,6 +452,7 @@
             bambooshark: 'https://i.imgur.com/yC1TxSb.png',
             koifish: 'https://i.imgur.com/adKVG0I.png'
         };
+
         const EMPLOYEES = [
             { id: 1, name: "Carissa", animal: "Dolphin", quote: "Dolphins are intelligent, social and graceful. They work well in teams but still have their own sense of freedom and joy.", image: "dolphin1" },
             { id: 2, name: "Dory", animal: "Platypus", quote: "The more you learn about it, the weirder it is", image: "platypus" },
@@ -414,6 +465,7 @@
             { id: 9, name: "Sharon", animal: "Rottweiler", quote: "Rottweilers are loyal, funny, and they are good guard dogs and companions", image: "rottweiler" },
             { id: 10, name: "Victoria", animal: "Dolphin", quote: "They are highly intelligent, playful, emotionally aware, and social. They thrive through cooperation, curiosity and creativity.", image: "dolphin2" }
         ];
+
         class AnimalGame {
             constructor() {
                 this.state = {
@@ -434,19 +486,25 @@
                     showAdminPanel: false,
                     isLoading: true
                 };
+                
                 this.initializeClues();
                 this.startPresenceTracking();
                 this.checkExistingSession();
             }
+
             async checkExistingSession() {
                 try {
                     const savedSession = sessionStorage.getItem('animalGameSession');
                     if (savedSession) {
                         const session = JSON.parse(savedSession);
+                        console.log('Restoring session for:', session.playerName);
+                        
+                        // Set isLoading to false BEFORE trying to initialize player
+                        this.state.isLoading = false;
+                        
                         const success = await this.initializePlayer(session.playerName, session.isAdmin);
                         if (success) {
-                            this.state.isLoading = false;
-                            this.render();
+                            console.log('Session restored successfully');
                             return;
                         }
                     }
@@ -454,17 +512,21 @@
                     console.error('Session recovery error:', error);
                     sessionStorage.removeItem('animalGameSession');
                 }
+                
+                // If we get here, no session or session restore failed
                 this.state.isLoading = false;
                 this.render();
             }
+
             initializeClues() {
                 this.state.shuffledClues = EMPLOYEES.map(emp => ({ 
                     id: emp.id, 
                     animal: emp.animal, 
                     quote: emp.quote,
-                    image: emp.image 
+                    image: emp.image
                 })).sort(() => Math.random() - 0.5);
             }
+
             startPresenceTracking() {
                 setInterval(() => {
                     if (this.state.playerId) {
@@ -474,6 +536,7 @@
                     }
                 }, 10000);
             }
+
             startTimer() {
                 this.state.startTime = Date.now();
                 this.state.timerInterval = setInterval(() => {
@@ -484,21 +547,25 @@
                     }
                 }, 1000);
             }
+
             stopTimer() {
                 if (this.state.timerInterval) {
                     clearInterval(this.state.timerInterval);
                     this.state.timerInterval = null;
                 }
             }
+
             formatTime(seconds) {
                 const mins = Math.floor(seconds / 60);
                 const secs = seconds % 60;
                 return mins + ':' + (secs < 10 ? '0' : '') + secs;
             }
+
             getPlayerStatus(player) {
                 const now = Date.now();
                 const lastActive = player.lastActive || player.createdAt || now;
                 const timeSince = now - lastActive;
+
                 if (player.isSubmitted) {
                     return 'completed';
                 } else if (timeSince < 300000) {
@@ -507,23 +574,28 @@
                     return 'idle';
                 }
             }
+
             getTimeSinceActive(lastActive) {
                 if (!lastActive) return 'Never';
                 const now = Date.now();
                 const diff = Math.floor((now - lastActive) / 1000);
+                
                 if (diff < 10) return 'Just now';
                 if (diff < 60) return diff + 's ago';
                 if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
                 if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
                 return Math.floor(diff / 86400) + 'd ago';
             }
+
             async initializePlayer(playerName, isAdmin = false) {
                 try {
                     const playersRef = db.ref('players');
                     const snapshot = await playersRef.once('value');
                     const players = snapshot.val() || {};
+                    
                     let player = null;
                     let playerId = null;
+
                     for (const [id, data] of Object.entries(players)) {
                         if (data.name && data.name.toLowerCase() === playerName.toLowerCase()) {
                             player = data;
@@ -531,6 +603,7 @@
                             break;
                         }
                     }
+
                     if (!player) {
                         const newPlayerRef = playersRef.push();
                         playerId = newPlayerRef.key;
@@ -555,24 +628,28 @@
                             lastActive: Date.now()
                         });
                     }
+
                     this.state.playerId = playerId;
                     this.state.playerData = player;
                     this.state.isAdmin = isAdmin;
+
                     sessionStorage.setItem('animalGameSession', JSON.stringify({
                         playerName: playerName,
                         isAdmin: isAdmin
                     }));
+
                     const self = this;
                     db.ref('players/' + playerId).on('value', (snapshot) => {
                         const data = snapshot.val();
                         if (data) {
                             self.state.playerData = data;
-                            if (self.state.playerId && !self.state.isLoading) {
-                                self.render();
-                            }
+                            // Always render when Firebase updates, regardless of isLoading
+                            self.render();
                         }
                     });
+
                     this.startTimer();
+
                     return true;
                 } catch (error) {
                     console.error('Error initializing player:', error);
@@ -580,9 +657,11 @@
                     return false;
                 }
             }
+
             async loadAllPlayers() {
                 const snapshot = await db.ref('players').once('value');
                 const allPlayers = snapshot.val() || {};
+                
                 this.state.allPlayers = Object.entries(allPlayers)
                     .filter(([id, data]) => {
                         return data.matches !== undefined || data.isSubmitted !== undefined || data.checksUsed !== undefined;
@@ -592,56 +671,78 @@
                         ...data
                     }));
             }
+
             async handleMatch(clueId, employeeId) {
                 if (!this.state.playerId || this.state.playerData.isSubmitted) return;
+
                 const matches = { ...this.state.playerData.matches };
                 const history = [...(this.state.playerData.history || [])];
+                
                 const alreadyAssignedClue = Object.keys(matches).find(cId => matches[cId] === employeeId);
                 if (alreadyAssignedClue) {
                     delete matches[alreadyAssignedClue];
                 }
+                
                 history.push({ matches: { ...this.state.playerData.matches }, timestamp: Date.now() });
                 if (history.length > 3) history.shift();
+
                 matches[clueId] = employeeId;
+
                 this.state.playerData.matches = matches;
                 this.state.playerData.history = history;
+                
                 this.render();
+
                 await db.ref('players/' + this.state.playerId).update({
                     matches,
                     history,
                     lastActive: Date.now()
                 });
             }
+
             async handleClear(clueId) {
                 if (!this.state.playerId || this.state.playerData.isSubmitted) return;
+
                 const matches = { ...this.state.playerData.matches };
                 const history = [...(this.state.playerData.history || [])];
+                
                 history.push({ matches: { ...matches }, timestamp: Date.now() });
                 if (history.length > 3) history.shift();
+
                 delete matches[clueId];
+
                 this.state.playerData.matches = matches;
                 this.state.playerData.history = history;
+                
                 this.render();
+
                 await db.ref('players/' + this.state.playerId).update({
                     matches,
                     history,
                     lastActive: Date.now()
                 });
             }
+
             async handleUndo() {
                 if (!this.state.playerId || this.state.playerData.isSubmitted) return;
+
                 const history = [...(this.state.playerData.history || [])];
                 if (history.length === 0) return;
+
                 const previousState = history.pop();
+                
                 this.state.playerData.matches = previousState.matches;
                 this.state.playerData.history = history;
+                
                 this.render();
+
                 await db.ref('players/' + this.state.playerId).update({
                     matches: previousState.matches,
                     history,
                     lastActive: Date.now()
                 });
             }
+
             calculateCorrect() {
                 const matches = this.state.playerData.matches || {};
                 let correct = 0;
@@ -652,42 +753,53 @@
                 }
                 return correct;
             }
+
             async pullLever() {
                 if (this.state.playerData.checksUsed >= 2 || this.state.playerData.isSubmitted) return;
+
                 const matchCount = Object.keys(this.state.playerData.matches || {}).length;
                 if (matchCount !== EMPLOYEES.length) {
                     alert('Please match all animals before checking!');
                     return;
                 }
+
                 this.state.leverPulled = true;
                 this.render();
+
                 const self = this;
                 setTimeout(async () => {
                     const correct = self.calculateCorrect();
                     self.state.correctCount = correct;
                     self.state.showLeverResult = true;
                     self.state.leverPulled = false;
+
                     await db.ref('players/' + self.state.playerId).update({
                         checksUsed: self.state.playerData.checksUsed + 1,
                         lastActive: Date.now()
                     });
+
                     self.render();
+
                     setTimeout(() => {
                         self.state.showLeverResult = false;
                         self.render();
                     }, 4000);
                 }, 600);
             }
+
             async submitFinal() {
                 if (this.state.playerData.isSubmitted) return;
+
                 const matchCount = Object.keys(this.state.playerData.matches || {}).length;
                 if (matchCount !== EMPLOYEES.length) {
                     alert('Please match all animals before submitting!');
                     return;
                 }
+
                 const correct = this.calculateCorrect();
                 this.state.correctCount = correct;
                 this.stopTimer();
+
                 await db.ref('players/' + this.state.playerId).update({
                     isSubmitted: true,
                     finalScore: correct,
@@ -695,14 +807,18 @@
                     submittedAt: Date.now(),
                     lastActive: Date.now()
                 });
+
                 this.state.showLeverResult = true;
                 this.render();
             }
+
             async resetPlayer() {
                 if (!confirm('Reset your game? This will clear all progress.')) return;
+
                 this.initializeClues();
                 this.stopTimer();
                 this.state.elapsedTime = 0;
+                
                 await db.ref('players/' + this.state.playerId).update({
                     matches: {},
                     checksUsed: 0,
@@ -712,18 +828,22 @@
                     completionTime: null,
                     lastActive: Date.now()
                 });
+                
                 this.startTimer();
             }
+
             async addPlayer(name) {
                 const playersRef = db.ref('players');
                 const snapshot = await playersRef.once('value');
                 const players = snapshot.val() || {};
+                
                 for (const [id, data] of Object.entries(players)) {
                     if (data.name && data.name.toLowerCase() === name.toLowerCase()) {
                         alert('Player "' + name + '" already exists!');
                         return;
                     }
                 }
+
                 const newPlayerRef = playersRef.push();
                 await newPlayerRef.set({
                     name,
@@ -737,12 +857,14 @@
                 await this.loadAllPlayers();
                 this.render();
             }
+
             async deletePlayer(playerId) {
                 if (!confirm('Delete this player?')) return;
                 await db.ref('players/' + playerId).remove();
                 await this.loadAllPlayers();
                 this.render();
             }
+
             async kickPlayer(playerId) {
                 if (!confirm('Kick this player from the game?')) return;
                 await db.ref('players/' + playerId).update({
@@ -752,6 +874,7 @@
                 await this.loadAllPlayers();
                 this.render();
             }
+
             async clearPlayerChoices(playerId) {
                 if (!confirm('Clear this player\'s choices?')) return;
                 await db.ref('players/' + playerId).update({
@@ -762,8 +885,10 @@
                 await this.loadAllPlayers();
                 this.render();
             }
+
             setupDragAndDrop() {
                 const self = this;
+                
                 document.querySelectorAll('.neon-tag:not(.placed)').forEach(tag => {
                     tag.addEventListener('dragstart', (e) => {
                         const employeeId = parseInt(e.target.dataset.employeeId);
@@ -771,29 +896,35 @@
                         e.target.classList.add('dragging');
                         e.dataTransfer.effectAllowed = 'move';
                     });
+
                     tag.addEventListener('dragend', (e) => {
                         e.target.classList.remove('dragging');
                         self.state.draggedEmployeeId = null;
                     });
                 });
+
                 document.querySelectorAll('.drop-zone').forEach(zone => {
                     zone.addEventListener('dragover', (e) => {
                         e.preventDefault();
                         e.dataTransfer.dropEffect = 'move';
                         zone.classList.add('drag-over');
                     });
+
                     zone.addEventListener('dragleave', () => {
                         zone.classList.remove('drag-over');
                     });
+
                     zone.addEventListener('drop', (e) => {
                         e.preventDefault();
                         zone.classList.remove('drag-over');
+                        
                         if (self.state.draggedEmployeeId && !self.state.playerData.isSubmitted) {
                             const clueId = parseInt(zone.dataset.clueId);
                             self.handleMatch(clueId, self.state.draggedEmployeeId);
                         }
                     });
                 });
+
                 document.querySelectorAll('.neon-tag.placed').forEach(tag => {
                     tag.addEventListener('dblclick', () => {
                         if (!self.state.playerData.isSubmitted) {
@@ -801,10 +932,12 @@
                             self.handleClear(clueId);
                         }
                     });
+                    
                     tag.style.cursor = 'pointer';
                     tag.title = 'Double-click to remove';
                 });
             }
+
             getMiniAdminPanel() {
                 return `
                     <div class="admin-mini-panel">
@@ -817,6 +950,7 @@
                                 ✕
                             </button>
                         </div>
+                        
                         <div class="mb-4">
                             <button
                                 onclick="game.refreshPlayers()"
@@ -825,6 +959,7 @@
                                 Refresh Players
                             </button>
                         </div>
+
                         <div class="space-y-2">
                             ${this.state.allPlayers.map(player => {
                                 const status = this.getPlayerStatus(player);
@@ -867,6 +1002,7 @@
                     </div>
                 `;
             }
+
             getAdminToggleButton() {
                 return `
                     <button
@@ -877,6 +1013,7 @@
                     </button>
                 `;
             }
+
             toggleAdminPanel() {
                 this.state.showAdminPanel = !this.state.showAdminPanel;
                 if (this.state.showAdminPanel) {
@@ -884,10 +1021,12 @@
                 }
                 this.render();
             }
+
             async refreshPlayers() {
                 await this.loadAllPlayers();
                 this.render();
             }
+
             getLoginHTML() {
                 return `
                     <div class="flex items-center justify-center min-h-screen">
@@ -896,6 +1035,7 @@
                                 <h1 class="text-5xl font-black text-gray-900 mb-2">🐾 Animal Game</h1>
                                 <p class="text-xl text-gray-600 font-semibold">Who Said That?</p>
                             </div>
+
                             <div class="space-y-4">
                                 <div>
                                     <label class="block text-sm font-bold text-gray-700 mb-2">Your Name</label>
@@ -907,6 +1047,7 @@
                                         onkeypress="if(event.key === 'Enter') game.login()"
                                     />
                                 </div>
+
                                 <button
                                     onclick="game.login()"
                                     class="login-button"
@@ -914,6 +1055,7 @@
                                 >
                                     Start Playing
                                 </button>
+
                                 <button
                                     onclick="sessionStorage.clear(); location.reload();"
                                     class="login-button text-sm"
@@ -922,6 +1064,7 @@
                                     Clear Session & Reload
                                 </button>
                             </div>
+
                             <div class="mt-8 pt-6 border-t border-gray-200">
                                 <h3 class="text-sm font-bold text-gray-700 mb-3">Players Online</h3>
                                 <div class="space-y-2 max-h-48 overflow-y-auto">
@@ -941,6 +1084,7 @@
                     </div>
                 `;
             }
+
             getAdminPasswordPrompt() {
                 return `
                     <div class="flex items-center justify-center min-h-screen">
@@ -950,6 +1094,7 @@
                                 <p class="text-xl text-gray-600 font-semibold">Welcome, ${ADMIN_NAME}</p>
                                 <p class="text-sm text-gray-500 mt-2">Please enter your admin password</p>
                             </div>
+
                             <div class="space-y-4">
                                 <div>
                                     <label class="block text-sm font-bold text-gray-700 mb-2">Admin Password</label>
@@ -961,6 +1106,7 @@
                                         onkeypress="if(event.key === 'Enter') game.verifyAdminPassword()"
                                     />
                                 </div>
+
                                 <button
                                     onclick="game.verifyAdminPassword()"
                                     class="login-button"
@@ -968,6 +1114,7 @@
                                 >
                                     Login as Admin
                                 </button>
+
                                 <button
                                     onclick="game.state.showAdminPassword = false; game.state.tempAdminName = null; game.render();"
                                     class="login-button"
@@ -980,16 +1127,20 @@
                     </div>
                 `;
             }
+
             getGameHTML() {
                 const matches = this.state.playerData.matches || {};
                 const matchCount = Object.keys(matches).length;
                 const checksRemaining = 2 - (this.state.playerData.checksUsed || 0);
                 const canPullLever = matchCount === EMPLOYEES.length && checksRemaining > 0 && !this.state.playerData.isSubmitted;
+
                 let html = `
                     <div class="timer-badge">
                         ⏱️ <span id="timer">${this.formatTime(this.state.elapsedTime)}</span>
                     </div>
+
                     ${this.state.isAdmin ? (this.state.showAdminPanel ? this.getMiniAdminPanel() : this.getAdminToggleButton()) : ''}
+
                     <div class="max-w-7xl mx-auto py-8">
                         <div class="text-center mb-8">
                             <h1 class="text-6xl font-bold text-white mb-2" style="text-shadow: 3px 3px 0 #000, -1px -1px 0 #10b981;">
@@ -1007,6 +1158,7 @@
                             ` : ''}
                         </div>
                 `;
+
                 if (this.state.showLeverResult) {
                     html += `
                         <div class="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-50">
@@ -1015,16 +1167,20 @@
                                     <div class="race-game-header text-center">
                                         ${this.state.playerData.isSubmitted ? '🎉 FINAL RESULTS' : '✓ CHECK RESULTS'}
                                     </div>
+                                    
                                     <div class="lcd-display active mt-6">
                                         ${this.state.correctCount}
                                     </div>
+                                    
                                     <div class="text-center text-3xl font-bold mt-6" style="color: #064e3b;">
                                         CORRECT OUT OF ${EMPLOYEES.length}!
                                     </div>
+                                    
                                     ${this.state.playerData.isSubmitted ? `
                                         <div class="text-center text-2xl font-bold mt-4" style="color: #064e3b;">
                                             Time: ${this.formatTime(this.state.playerData.completionTime)}
                                         </div>
+                                        
                                         <div class="bg-yellow-100 border-4 border-yellow-500 rounded-lg p-6 mt-6">
                                             <p class="text-center text-lg font-bold text-gray-900 mb-2">
                                                 📸 IMPORTANT!
@@ -1034,6 +1190,7 @@
                                                 <span class="text-blue-600">Sherry Morse</span> for validation!
                                             </p>
                                         </div>
+                                        
                                         <button
                                             onclick="game.resetPlayer()"
                                             class="w-full mt-6 bg-green-500 text-white py-4 rounded-lg font-bold text-xl hover:bg-green-600"
@@ -1046,137 +1203,170 @@
                         </div>
                     `;
                 }
+
                 html += `
-                        <div class="grid lg:grid-cols-3 gap-8 mb-8">
-                            <div class="lg:col-span-2">
-                                <div class="race-game-border">
-                                    <div class="race-game-inner p-6">
-                                        <div class="race-game-header">
-                                            🦁 ANIMALS & QUOTES
-                                        </div>
-                                        <div class="space-y-3 mt-6">
+                    <div class="grid lg:grid-cols-3 gap-8 mb-8">
+                        <div class="lg:col-span-2">
+                            <div class="race-game-border">
+                                <div class="race-game-inner p-6">
+                                    <div class="race-game-header">
+                                        🦁 ANIMALS & QUOTES
+                                    </div>
+                                    
+                                    <div class="space-y-3 mt-6">
                 `;
+
                 this.state.shuffledClues.forEach(clue => {
                     html += `
                         <div class="clue-card ${matches[clue.id] ? 'has-tag' : ''}">
                             <div style="display: flex; align-items: flex-start; gap: 1rem;">
                                 <img src="${ANIMAL_IMAGES[clue.image]}" alt="${clue.animal}" class="animal-image" />
                                 <div style="flex: 1;">
-                                    <div class="animal-name">🐾 ${clue.animal}</div>
+                                    <div class="animal-name">${clue.animal}</div>
                                     <div class="quote-text">"${clue.quote}"</div>
                                 </div>
                             </div>
                     `;
+
                     if (matches[clue.id]) {
                         const emp = EMPLOYEES.find(e => e.id === matches[clue.id]);
                         html += `
-                            <div class="neon-tag placed" data-clue-id="${clue.id}" data-employee-id="${matches[clue.id]}">
+                            <div
+                                class="neon-tag placed"
+                                data-clue-id="${clue.id}"
+                                data-employee-id="${matches[clue.id]}"
+                            >
                                 ${emp.name}
                             </div>
                         `;
                     } else {
                         html += `
                             <div class="drop-zone" data-clue-id="${clue.id}">
-                                <span style="color: rgba(255, 255, 255, 0.4); font-size: 0.85rem; font-weight: bold;">DROP TAG HERE</span>
+                                <span style="color: rgba(255, 255, 255, 0.4); font-size: 0.85rem; font-weight: bold;">
+                                    DROP TAG HERE
+                                </span>
                             </div>
                         `;
                     }
+
                     html += `</div>`;
                 });
+
                 html += `
-                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <div>
-                                <div class="name-rack">
-                                    <div class="race-game-header text-center" style="margin: -1.5rem -1.5rem 0 -1.5rem;">
-                                        🏷️ NAME TAGS
-                                    </div>
-                                    <p class="text-center text-white mt-4 text-sm font-bold">Drag names to quotes</p>
-                                    <div class="tag-container">
+                        </div>
+                        
+                        <div>
+                            <div class="name-rack">
+                                <div class="race-game-header text-center" style="margin: -1.5rem -1.5rem 0 -1.5rem;">
+                                    🏷️ NAME TAGS
+                                </div>
+                                <p class="text-center text-white mt-4 text-sm font-bold">Drag names to quotes</p>
+                                
+                                <div class="tag-container">
                 `;
+
                 EMPLOYEES.forEach(employee => {
                     const isAssigned = Object.values(matches).includes(employee.id);
                     if (isAssigned && !this.state.playerData.isSubmitted) return;
+
                     html += `
-                        <div class="neon-tag" 
-                             draggable="${!this.state.playerData.isSubmitted && !isAssigned}"
-                             data-employee-id="${employee.id}"
-                             style="${isAssigned ? 'opacity: 0.3; cursor: not-allowed;' : ''}">
+                        <div
+                            class="neon-tag"
+                            draggable="${!this.state.playerData.isSubmitted && !isAssigned}"
+                            data-employee-id="${employee.id}"
+                            style="${isAssigned ? 'opacity: 0.3; cursor: not-allowed;' : ''}"
+                        >
                             ${employee.name}
                         </div>
                     `;
                 });
+
                 html += `
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="race-game-border">
-                            <div class="race-game-inner p-6">
-                                <div class="flex flex-wrap items-center justify-center gap-8">
-                                    <div class="text-center">
-                                        <div class="lever-container" style="cursor: ${canPullLever ? 'pointer' : 'not-allowed'};" onclick="${canPullLever ? 'game.pullLever()' : ''}">
-                                            <div class="lever-arm ${this.state.leverPulled ? 'pulled' : ''}">
-                                                <div class="lever-handle"></div>
-                                            </div>
-                                            <div class="lever-base"></div>
-                                        </div>
-                                        <div class="mt-4 text-sm font-bold" style="color: #064e3b;">
-                                            PULL TO CHECK<br>
-                                            (${checksRemaining} checks left)
-                                        </div>
-                                    </div>
-                                    <div class="flex flex-col gap-4">
-                                        <div class="text-center text-2xl font-bold" style="color: #064e3b;">
-                                            MATCHED: ${matchCount} / ${EMPLOYEES.length}
-                                        </div>
-                                        <button
-                                            onclick="game.submitFinal()"
-                                            ${this.state.playerData.isSubmitted || matchCount !== EMPLOYEES.length ? 'disabled' : ''}
-                                            class="bg-green-500 text-white px-8 py-4 rounded-xl font-bold text-xl hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            SUBMIT FINAL
-                                        </button>
-                                        <button
-                                            onclick="game.handleUndo()"
-                                            ${this.state.playerData.isSubmitted || !this.state.playerData.history || this.state.playerData.history.length === 0 ? 'disabled' : ''}
-                                            class="bg-yellow-500 text-black px-8 py-3 rounded-xl font-bold hover:bg-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            UNDO (${this.state.playerData.history ? this.state.playerData.history.length : 0})
-                                        </button>
-                                        <button
-                                            onclick="game.resetPlayer()"
-                                            class="bg-red-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-red-600"
-                                        >
-                                            RESET GAME
-                                        </button>
-                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    
+                    <div class="race-game-border">
+                        <div class="race-game-inner p-6">
+                            <div class="flex flex-wrap items-center justify-center gap-8">
+                                <div class="text-center">
+                                    <div
+                                        class="lever-container"
+                                        style="cursor: ${canPullLever ? 'pointer' : 'not-allowed'};"
+                                        onclick="${canPullLever ? 'game.pullLever()' : ''}"
+                                    >
+                                        <div class="lever-arm ${this.state.leverPulled ? 'pulled' : ''}">
+                                            <div class="lever-handle"></div>
+                                        </div>
+                                        <div class="lever-base"></div>
+                                    </div>
+                                    <div class="mt-4 text-sm font-bold" style="color: #064e3b;">
+                                        PULL TO CHECK<br>
+                                        (${checksRemaining} checks left)
+                                    </div>
+                                </div>
+                                
+                                <div class="flex flex-col gap-4">
+                                    <div class="text-center text-2xl font-bold" style="color: #064e3b;">
+                                        MATCHED: ${matchCount} / ${EMPLOYEES.length}
+                                    </div>
+                                    
+                                    <button
+                                        onclick="game.submitFinal()"
+                                        ${this.state.playerData.isSubmitted || matchCount !== EMPLOYEES.length ? 'disabled' : ''}
+                                        class="bg-green-500 text-white px-8 py-4 rounded-xl font-bold text-xl hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        SUBMIT FINAL
+                                    </button>
+                                    
+                                    <button
+                                        onclick="game.handleUndo()"
+                                        ${this.state.playerData.isSubmitted || !this.state.playerData.history || this.state.playerData.history.length === 0 ? 'disabled' : ''}
+                                        class="bg-yellow-500 text-black px-8 py-3 rounded-xl font-bold hover:bg-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        UNDO (${this.state.playerData.history ? this.state.playerData.history.length : 0})
+                                    </button>
+                                    
+                                    <button
+                                        onclick="game.resetPlayer()"
+                                        class="bg-red-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-red-600"
+                                    >
+                                        RESET GAME
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 `;
+
                 return html;
             }
+
             async login() {
                 const playerName = document.getElementById('nameInput').value.trim();
                 if (!playerName) {
                     alert('Please enter your name!');
                     return;
                 }
+
                 if (playerName.toLowerCase() === ADMIN_NAME.toLowerCase()) {
                     this.state.showAdminPassword = true;
                     this.state.tempAdminName = playerName;
                     this.render();
                     return;
                 }
+
                 const success = await this.initializePlayer(playerName, false);
                 if (success) {
                     this.render();
                 }
             }
+
             async verifyAdminPassword() {
                 const password = document.getElementById('adminPassword').value;
                 if (password !== ADMIN_PASSWORD) {
@@ -1184,6 +1374,7 @@
                     document.getElementById('adminPassword').value = '';
                     return;
                 }
+
                 const success = await this.initializePlayer(ADMIN_NAME, true);
                 if (success) {
                     await this.loadAllPlayers();
@@ -1192,6 +1383,7 @@
                     this.render();
                 }
             }
+
             logout() {
                 if (confirm('Are you sure you want to logout?')) {
                     this.state.isAdmin = false;
@@ -1205,8 +1397,10 @@
                     this.render();
                 }
             }
+
             async render() {
                 const app = document.getElementById('app');
+                
                 if (this.state.isLoading) {
                     app.innerHTML = `
                         <div class="flex items-center justify-center min-h-screen">
@@ -1226,6 +1420,7 @@
                     `;
                     return;
                 }
+
                 if (this.state.showAdminPassword) {
                     app.innerHTML = this.getAdminPasswordPrompt();
                     setTimeout(() => {
@@ -1247,6 +1442,7 @@
                 }
             }
         }
+
         const game = new AnimalGame();
     </script>
 </body>
