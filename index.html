@@ -465,30 +465,38 @@
                 this.initializeClues();
                 this.startPresenceTracking();
                 
-                // Check for existing session and render
-                const savedSession = sessionStorage.getItem('animalGameSession');
-                if (savedSession) {
-                    try {
-                        const session = JSON.parse(savedSession);
-                        this.restoreSession(session);
-                    } catch (error) {
-                        console.error('Error restoring session:', error);
-                        sessionStorage.removeItem('animalGameSession');
-                        this.render();
+                // Render immediately, then check for session
+                this.render();
+                
+                // Check for existing session after initial render
+                setTimeout(() => {
+                    const savedSession = sessionStorage.getItem('animalGameSession');
+                    if (savedSession) {
+                        try {
+                            const session = JSON.parse(savedSession);
+                            this.restoreSession(session);
+                        } catch (error) {
+                            console.error('Error restoring session:', error);
+                            sessionStorage.removeItem('animalGameSession');
+                        }
                     }
-                } else {
-                    this.render();
-                }
+                }, 100);
             }
 
             async restoreSession(session) {
-                const success = await this.initializePlayer(session.name, session.isAdmin);
-                if (success) {
-                    if (session.isAdmin) {
-                        await this.loadAllPlayers();
+                try {
+                    const success = await this.initializePlayer(session.name, session.isAdmin);
+                    if (success) {
+                        if (session.isAdmin) {
+                            await this.loadAllPlayers();
+                        }
+                        this.render();
+                    } else {
+                        sessionStorage.removeItem('animalGameSession');
+                        this.render();
                     }
-                    this.render();
-                } else {
+                } catch (error) {
+                    console.error('Failed to restore session:', error);
                     sessionStorage.removeItem('animalGameSession');
                     this.render();
                 }
@@ -949,6 +957,13 @@
                                     style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;"
                                 >
                                     Start Playing
+                                </button>
+                                <button
+                                    onclick="sessionStorage.clear(); location.reload();"
+                                    class="login-button"
+                                    style="background: #e5e7eb; color: #374151; font-size: 0.875rem; padding: 0.75rem;"
+                                >
+                                    Clear Session & Reload
                                 </button>
                             </div>
                             
