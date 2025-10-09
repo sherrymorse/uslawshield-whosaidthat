@@ -229,7 +229,7 @@
                     .sort(() => Math.random() - 0.5);
             }
 
-            async initializePlayer(token) {
+            async initializePlayer(playerName) {
                 const playersRef = db.ref('players');
                 const snapshot = await playersRef.once('value');
                 const players = snapshot.val() || {};
@@ -237,31 +237,36 @@
                 let player = null;
                 let playerId = null;
 
+                // Check if player already exists
                 for (const [id, data] of Object.entries(players)) {
-                    if (data.token === token) {
+                    if (data.name && data.name.toLowerCase() === playerName.toLowerCase()) {
                         player = data;
                         playerId = id;
                         break;
                     }
                 }
 
+                // Create new player if doesn't exist
                 if (!player) {
-                    alert('Invalid token! Please check your token and try again.');
-                    return false;
+                    const newPlayerRef = playersRef.push();
+                    playerId = newPlayerRef.key;
+                    await newPlayerRef.set({
+                        name: playerName,
+                        matches: {},
+                        checksUsed: 0,
+                        isSubmitted: false,
+                        createdAt: Date.now()
+                    });
+                    player = {
+                        name: playerName,
+                        matches: {},
+                        checksUsed: 0,
+                        isSubmitted: false
+                    };
                 }
 
                 this.state.playerId = playerId;
                 this.state.playerData = player;
-
-                // Initialize player data if needed
-                if (!player.matches) {
-                    await db.ref('players/' + playerId).update({
-                        matches: {},
-                        checksUsed: 0,
-                        isSubmitted: false,
-                        history: []
-                    });
-                }
 
                 // Listen for player updates
                 const self = this;
@@ -408,17 +413,28 @@
             }
 
             async addPlayer(name) {
-                const token = Math.random().toString(36).substring(2, 10).toUpperCase();
-                const newPlayerRef = db.ref('players').push();
+                // This is now just for admin to manually add/reset players if needed
+                const playersRef = db.ref('players');
+                const snapshot = await playersRef.once('value');
+                const players = snapshot.val() || {};
+                
+                // Check if player exists
+                for (const [id, data] of Object.entries(players)) {
+                    if (data.name && data.name.toLowerCase() === name.toLowerCase()) {
+                        alert('Player "' + name + '" already exists!');
+                        return;
+                    }
+                }
+
+                const newPlayerRef = playersRef.push();
                 await newPlayerRef.set({
                     name,
-                    token,
                     matches: {},
                     checksUsed: 0,
                     isSubmitted: false,
                     createdAt: Date.now()
                 });
-                alert('Player added!\nName: ' + name + '\nToken: ' + token);
+                alert('Player "' + name + '" added successfully!');
                 await this.loadAllPlayers();
                 this.render();
             }
@@ -426,6 +442,19 @@
             async deletePlayer(playerId) {
                 if (!confirm('Delete this player?')) return;
                 await db.ref('players/' + playerId).remove();
+                await this.loadAllPlayers();
+                this.render();
+            }
+
+            async resetPlayerAdmin(playerId) {
+                if (!confirm('Reset this player\'s game? This will clear their progress.')) return;
+                await db.ref('players/' + playerId).update({
+                    matches: {},
+                    checksUsed: 0,
+                    isSubmitted: false,
+                    history: [],
+                    finalScore: null
+                });
                 await this.loadAllPlayers();
                 this.render();
             }
@@ -441,8 +470,8 @@
                                 <div class="mt-6 space-y-4">
                                     <input
                                         type="text"
-                                        id="tokenInput"
-                                        placeholder="ENTER TOKEN"
+                                        id="nameInput"
+                                        placeholder="ENTER YOUR NAME"
                                         class="token-input w-full px-4 py-3 rounded-lg"
                                     />
                                     <button
@@ -480,7 +509,7 @@
                             </div>
 
                             <div class="mb-8 bg-gray-900 rounded-lg p-4">
-                                <h2 class="text-2xl font-bold text-yellow-400 mb-4">Add New Player</h2>
+                                <h2 class="text-2xl font-bold text-yellow-400 mb-4">Add/Reset Player</h2>
                                 <div class="flex gap-4">
                                     <input
                                         type="text"
@@ -495,6 +524,7 @@
                                         ADD PLAYER
                                     </button>
                                 </div>
+                                <p class="text-gray-400 text-sm mt-2">Note: Players are auto-created when they enter their name. Use this to manually add or verify players.</p>
                             </div>
 
                             <div class="overflow-x-auto">
@@ -503,7 +533,6 @@
                                     <thead>
                                         <tr class="border-b-2 border-yellow-400">
                                             <th class="p-3 text-left">Name</th>
-                                            <th class="p-3 text-left">Token</th>
                                             <th class="p-3 text-center">Matched</th>
                                             <th class="p-3 text-center">Checks Used</th>
                                             <th class="p-3 text-center">Submitted</th>
@@ -515,12 +544,17 @@
                                         ${this.state.allPlayers.map(player => `
                                             <tr class="border-b border-gray-700">
                                                 <td class="p-3">${player.name}</td>
-                                                <td class="p-3 font-mono text-green-400">${player.token}</td>
                                                 <td class="p-3 text-center">${Object.keys(player.matches || {}).length} / ${EMPLOYEES.length}</td>
                                                 <td class="p-3 text-center">${player.checksUsed || 0} / 2</td>
                                                 <td class="p-3 text-center">${player.isSubmitted ? '✓' : '✗'}</td>
                                                 <td class="p-3 text-center">${player.finalScore !== null && player.finalScore !== undefined ? player.finalScore : '-'}</td>
                                                 <td class="p-3 text-center">
+                                                    <button
+                                                        onclick="game.resetPlayerAdmin('${player.id}')"
+                                                        class="bg-yellow-500 text-black px-3 py-1 rounded hover:bg-yellow-600 text-sm mr-2"
+                                                    >
+                                                        Reset
+                                                    </button>
                                                     <button
                                                         onclick="game.deletePlayer('${player.id}')"
                                                         class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-sm"
@@ -693,14 +727,14 @@
             }
 
             async login() {
-                const token = document.getElementById('tokenInput').value.trim().toUpperCase();
-                if (!token) {
-                    alert('Please enter a token!');
+                const playerName = document.getElementById('nameInput').value.trim();
+                if (!playerName) {
+                    alert('Please enter your name!');
                     return;
                 }
 
-                this.state.playerToken = token;
-                const success = await this.initializePlayer(token);
+                this.state.playerToken = playerName;
+                const success = await this.initializePlayer(playerName);
                 if (success) {
                     this.render();
                 }
