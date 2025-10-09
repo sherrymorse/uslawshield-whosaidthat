@@ -470,12 +470,15 @@
             }
 
             getTimeSinceActive(lastActive) {
+                if (!lastActive) return 'Never';
                 const now = Date.now();
                 const diff = Math.floor((now - lastActive) / 1000);
                 
+                if (diff < 10) return 'Just now';
                 if (diff < 60) return diff + 's ago';
                 if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
-                return Math.floor(diff / 3600) + 'h ago';
+                if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+                return Math.floor(diff / 86400) + 'd ago';
             }
 
             async initializePlayer(playerName, isAdmin = false) {
@@ -1037,11 +1040,19 @@
                     
                     <div class="max-w-7xl mx-auto py-8">
                         <div class="text-center mb-8">
-                            <h1 class="text-6xl font-bold text-white mb-2" style="text-shadow: 3px 3px 0 #000, -1px -1px 0 #22c55e;">
+                            <h1 class="text-6xl font-bold text-white mb-2" style="text-shadow: 3px 3px 0 #000, -1px -1px 0 #10b981;">
                                 ANIMAL GAME
                             </h1>
                             <p class="text-2xl text-yellow-300 font-bold">Who Said That?</p>
                             <p class="text-xl text-white mt-2">Welcome, ${this.state.playerData.name}!</p>
+                            ${this.state.isAdmin ? `
+                                <button
+                                    onclick="game.logout()"
+                                    class="mt-4 bg-red-500 text-white px-6 py-2 rounded-lg font-bold hover:bg-red-600 transition-all"
+                                >
+                                    Admin Logout
+                                </button>
+                            ` : ''}
                         </div>
                 `;
 
@@ -1216,45 +1227,56 @@
                     return;
                 }
 
+                // Check if this is admin
+                if (playerName.toLowerCase() === ADMIN_NAME.toLowerCase()) {
+                    this.state.showAdminPassword = true;
+                    this.state.tempAdminName = playerName;
+                    this.render();
+                    return;
+                }
+
                 const success = await this.initializePlayer(playerName, false);
                 if (success) {
                     this.render();
                 }
             }
 
-            showAdminLogin() {
-                this.state.showAdminLogin = true;
-                this.render();
-            }
-
-            async loginAdmin() {
+            async verifyAdminPassword() {
                 const password = document.getElementById('adminPassword').value;
                 if (password !== ADMIN_PASSWORD) {
-                    alert('Incorrect password!');
+                    alert('Incorrect password! Please try again.');
+                    document.getElementById('adminPassword').value = '';
                     return;
                 }
 
+                // Password correct - initialize as admin
                 const success = await this.initializePlayer(ADMIN_NAME, true);
                 if (success) {
                     await this.loadAllPlayers();
+                    this.state.showAdminPassword = false;
+                    this.state.tempAdminName = null;
                     this.render();
+                    alert('Admin login successful! Welcome, ' + ADMIN_NAME);
                 }
             }
 
             logout() {
-                this.state.isAdmin = false;
-                this.state.playerId = null;
-                this.state.playerData = null;
-                this.state.showAdminLogin = false;
-                this.stopTimer();
-                this.render();
+                if (confirm('Are you sure you want to logout?')) {
+                    this.state.isAdmin = false;
+                    this.state.playerId = null;
+                    this.state.playerData = null;
+                    this.state.showAdminPassword = false;
+                    this.state.tempAdminName = null;
+                    this.stopTimer();
+                    this.render();
+                }
             }
 
             async render() {
                 const app = document.getElementById('app');
                 
-                if (this.state.showAdminLogin) {
-                    app.innerHTML = this.getAdminLoginHTML();
+                if (this.state.showAdminPassword) {
+                    app.innerHTML = this.getAdminPasswordPrompt();
                 } else if (this.state.isAdmin && this.state.playerId) {
                     app.innerHTML = this.getAdminHTML();
                 } else if (this.state.playerId && this.state.playerData) {
