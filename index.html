@@ -171,7 +171,6 @@
             color: #f3f4f6;
             line-height: 1.6;
             flex-grow: 1;
-            max-width: calc(100% - 240px);
         }
 
         .drop-zone {
@@ -433,17 +432,28 @@
         const ADMIN_NAME = "Sherry Morse";
 
         const EMPLOYEES = [
-            { id: 1, name: "Carissa", animal: "Dolphin", quote: "Dolphins are intelligent, social and graceful. They work well in teams but still have their own sense of freedom and joy." },
-            { id: 2, name: "Dory", animal: "Platypus", quote: "The more you learn about it, the weirder it is" },
-            { id: 3, name: "Fernando", animal: "Goldfish", quote: "They've got a 10 second memory" },
-            { id: 4, name: "Heidy", animal: "Eagle", quote: "no reason" },
-            { id: 5, name: "Jason", animal: "Bear", quote: "I could roam the forest all day or catch fish in Alaska. In the summer, eat as much and stay in my den all winter." },
-            { id: 6, name: "Joe", animal: "Micro-pig", quote: "My wife thinks they are the cutest things on earth" },
-            { id: 7, name: "Lee", animal: "Koi fish", quote: "They live long lives and are so beautiful" },
-            { id: 8, name: "Magan", animal: "Bamboo Shark", quote: "They can live in a fish tank. Most people that have fish tanks typically take care of their fish so I could just vibe" },
-            { id: 9, name: "Sharon", animal: "Rottweiler", quote: "Rottweilers are loyal, funny, and they are good guard dogs and companions" },
-            { id: 10, name: "Victoria", animal: "Dolphin", quote: "They are highly intelligent, playful, emotionally aware, and social. They thrive through cooperation, curiosity and creativity." }
+            { id: 1, name: "Carissa", animal: "Dolphin", quote: "Dolphins are intelligent, social and graceful. They work well in teams but still have their own sense of freedom and joy.", image: "dolphin1" },
+            { id: 2, name: "Dory", animal: "Platypus", quote: "The more you learn about it, the weirder it is", image: "platypus" },
+            { id: 3, name: "Fernando", animal: "Goldfish", quote: "They've got a 10 second memory", image: "goldfish" },
+            { id: 4, name: "Heidy", animal: "Eagle", quote: "no reason", image: "eagle" },
+            { id: 5, name: "Jason", animal: "Bear", quote: "I could roam the forest all day or catch fish in Alaska. In the summer, eat as much and stay in my den all winter.", image: "bear" },
+            { id: 6, name: "Joe", animal: "Micro-pig", quote: "My wife thinks they are the cutest things on earth", image: "micropig" },
+            { id: 7, name: "Lee", animal: "Koi fish", quote: "They live long lives and are so beautiful", image: "goldfish" },
+            { id: 8, name: "Magan", animal: "Bamboo Shark", quote: "They can live in a fish tank. Most people that have fish tanks typically take care of their fish so I could just vibe", image: "platypus" },
+            { id: 9, name: "Sharon", animal: "Rottweiler", quote: "Rottweilers are loyal, funny, and they are good guard dogs and companions", image: "rottweiler" },
+            { id: 10, name: "Victoria", animal: "Dolphin", quote: "They are highly intelligent, playful, emotionally aware, and social. They thrive through cooperation, curiosity and creativity.", image: "dolphin2" }
         ];
+
+        const ANIMAL_IMAGES = {
+            bear: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"%3E%3Crect fill="%235b21b6" width="200" height="200"/%3E%3Ccircle cx="65" cy="60" r="25" fill="%23b45309"/%3E%3Ccircle cx="135" cy="60" r="25" fill="%23b45309"/%3E%3Cellipse cx="100" cy="110" rx="55" ry="60" fill="%23d97706"/%3E%3Cellipse cx="100" cy="130" rx="25" ry="30" fill="%23fbbf24"/%3E%3Ccircle cx="85" cy="105" r="6" fill="%23000"/%3E%3Ccircle cx="115" cy="105" r="6" fill="%23000"/%3E%3Cpath d="M 90 120 Q 100 128 110 120" stroke="%23000" stroke-width="3" fill="none"/%3E%3Cellipse cx="100" cy="115" rx="8" ry="10" fill="%23000"/%3E%3C/svg%3E',
+            dolphin1: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"%3E%3Crect fill="%235b21b6" width="200" height="200"/%3E%3Cpath d="M 40 120 Q 70 80 120 90 Q 160 95 170 110 Q 175 130 165 140 Q 150 155 120 150 Q 80 145 60 130 Q 35 115 40 120 Z" fill="%2338bdf8"/%3E%3Cpath d="M 120 90 Q 140 85 155 95 L 150 105 Q 135 98 120 100 Z" fill="%230ea5e9"/%3E%3Cpath d="M 165 140 Q 175 135 180 145 Q 178 155 170 152 Q 165 148 165 140 Z" fill="%230ea5e9"/%3E%3Ccircle cx="135" cy="110" r="4" fill="%23000"/%3E%3Cpath d="M 60 110 Q 80 100 100 110 L 95 120 Q 75 110 60 115 Z" fill="%23f0f9ff"/%3E%3C/svg%3E',
+            dolphin2: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"%3E%3Crect fill="%235b21b6" width="200" height="200"/%3E%3Cpath d="M 30 110 Q 60 70 110 80 Q 150 85 160 100 Q 165 120 155 130 Q 140 145 110 140 Q 70 135 50 120 Q 25 105 30 110 Z" fill="%2338bdf8"/%3E%3Cpath d="M 110 80 Q 130 75 145 85 L 140 95 Q 125 88 110 90 Z" fill="%230ea5e9"/%3E%3Cpath d="M 155 130 Q 165 125 170 135 Q 168 145 160 142 Q 155 138 155 130 Z" fill="%230ea5e9"/%3E%3Ccircle cx="125" cy="100" r="4" fill="%23000"/%3E%3Cpath d="M 50 100 Q 70 90 90 100 L 85 110 Q 65 100 50 105 Z" fill="%23f0f9ff"/%3E%3Cpath d="M 100 85 Q 105 70 110 85" stroke="%230ea5e9" stroke-width="2" fill="none"/%3E%3C/svg%3E',
+            rottweiler: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"%3E%3Crect fill="%235b21b6" width="200" height="200"/%3E%3Cellipse cx="100" cy="120" rx="45" ry="50" fill="%231f2937"/%3E%3Ccircle cx="75" cy="85" r="18" fill="%231f2937"/%3E%3Ccircle cx="125" cy="85" r="18" fill="%231f2937"/%3E%3Cellipse cx="100" cy="105" rx="35" ry="25" fill="%231f2937"/%3E%3Ccircle cx="88" cy="100" r="5" fill="%23fbbf24"/%3E%3Ccircle cx="112" cy="100" r="5" fill="%23fbbf24"/%3E%3Cellipse cx="100" cy="115" rx="12" ry="8" fill="%23b45309"/%3E%3Cpath d="M 85 125 Q 90 130 95 128" stroke="%23b45309" stroke-width="2" fill="none"/%3E%3Cpath d="M 105 128 Q 110 130 115 125" stroke="%23b45309" stroke-width="2" fill="none"/%3E%3Cellipse cx="100" cy="118" rx="6" ry="8" fill="%23000"/%3E%3C/svg%3E',
+            eagle: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"%3E%3Crect fill="%235b21b6" width="200" height="200"/%3E%3Cellipse cx="100" cy="100" rx="50" ry="45" fill="%238b5a3c"/%3E%3Ccircle cx="80" cy="75" r="22" fill="%23f3f4f6"/%3E%3Ccircle cx="120" cy="75" r="22" fill="%23f3f4f6"/%3E%3Ccircle cx="80" cy="75" r="8" fill="%23000"/%3E%3Ccircle cx="120" cy="75" r="8" fill="%23000"/%3E%3Cpath d="M 85 95 L 100 105 L 115 95" stroke="%23fbbf24" stroke-width="4" fill="%23fbbf24"/%3E%3Cpath d="M 55 135 Q 75 145 100 140 Q 125 145 145 135" fill="%23f3f4f6"/%3E%3Cpath d="M 60 120 Q 70 115 80 118" stroke="%23fbbf24" stroke-width="2" fill="none"/%3E%3Cpath d="M 120 118 Q 130 115 140 120" stroke="%23fbbf24" stroke-width="2" fill="none"/%3E%3C/svg%3E',
+            platypus: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"%3E%3Crect fill="%235b21b6" width="200" height="200"/%3E%3Cpath d="M 50 100 Q 60 70 100 75 Q 140 70 150 100 Q 155 130 130 145 Q 100 155 70 145 Q 45 130 50 100 Z" fill="%2338bdf8"/%3E%3Cpath d="M 100 75 Q 110 60 120 58 Q 130 56 135 65 L 130 72 Q 125 65 118 67 Q 110 69 105 78 Z" fill="%230ea5e9"/%3E%3Cpath d="M 100 75 Q 90 60 80 58 Q 70 56 65 65 L 70 72 Q 75 65 82 67 Q 90 69 95 78 Z" fill="%230ea5e9"/%3E%3Ccircle cx="85" cy="95" r="4" fill="%23000"/%3E%3Ccircle cx="115" cy="95" r="4" fill="%23000"/%3E%3Cellipse cx="100" cy="115" rx="25" ry="15" fill="%23fbbf24"/%3E%3Cpath d="M 70 145 Q 60 155 50 150" stroke="%230ea5e9" stroke-width="3" fill="none"/%3E%3Cpath d="M 130 145 Q 140 155 150 150" stroke="%230ea5e9" stroke-width="3" fill="none"/%3E%3C/svg%3E',
+            goldfish: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"%3E%3Crect fill="%235b21b6" width="200" height="200"/%3E%3Cellipse cx="110" cy="100" rx="50" ry="35" fill="%23f97316"/%3E%3Cpath d="M 60 100 Q 45 90 35 95 Q 30 100 35 105 Q 45 110 60 100 Z" fill="%23fb923c"/%3E%3Cpath d="M 160 85 Q 175 75 185 80 L 180 95 Q 170 88 165 90 Z" fill="%23fb923c"/%3E%3Cpath d="M 160 115 Q 175 125 185 120 L 180 105 Q 170 112 165 110 Z" fill="%23fb923c"/%3E%3Ccircle cx="90" cy="95" r="6" fill="%23000"/%3E%3Cpath d="M 110 90 Q 130 85 145 95 L 140 100 Q 125 92 110 95 Z" fill="%23fed7aa"/%3E%3C/svg%3E',
+            micropig: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"%3E%3Crect fill="%235b21b6" width="200" height="200"/%3E%3Cellipse cx="100" cy="110" rx="55" ry="45" fill="%23fda4af"/%3E%3Ccircle cx="70" cy="80" r="18" fill="%23fda4af"/%3E%3Cellipse cx="70" cy="75" rx="12" ry="16" fill="%23fecdd3" transform="rotate(-20 70 75)"/%3E%3Ccircle cx="130" cy="80" r="18" fill="%23fda4af"/%3E%3Cellipse cx="130" cy="75" rx="12" ry="16" fill="%23fecdd3" transform="rotate(20 130 75)"/%3E%3Ccircle cx="85" cy="105" r="4" fill="%23000"/%3E%3Ccircle cx="115" cy="105" r="4" fill="%23000"/%3E%3Cellipse cx="100" cy="120" rx="18" ry="14" fill="%23fb7185"/%3E%3Ccircle cx="92" cy="118" r="4" fill="%23000"/%3E%3Ccircle cx="108" cy="118" r="4" fill="%23000"/%3E%3Cpath d="M 90 130 Q 100 135 110 130" stroke="%23be123c" stroke-width="2" fill="none"/%3E%3C/svg%3E'
+        };
 
         class AnimalGame {
             constructor() {
@@ -499,7 +509,8 @@
                 this.state.shuffledClues = EMPLOYEES.map(emp => ({ 
                     id: emp.id, 
                     animal: emp.animal, 
-                    quote: emp.quote 
+                    quote: emp.quote,
+                    image: emp.image
                 })).sort(() => Math.random() - 0.5);
             }
 
@@ -619,7 +630,7 @@
                         const data = snapshot.val();
                         if (data) {
                             self.state.playerData = data;
-                            if (self.state.playerId && !self.state.isLoading) {
+                            if (self.state.playerId) {
                                 self.render();
                             }
                         }
@@ -1184,8 +1195,13 @@
                 this.state.shuffledClues.forEach(clue => {
                     html += `
                         <div class="clue-card ${matches[clue.id] ? 'has-tag' : ''}">
-                            <div class="animal-name">🐾 ${clue.animal}</div>
-                            <div class="quote-text">"${clue.quote}"</div>
+                            <div style="display: flex; align-items: flex-start; gap: 1rem;">
+                                <img src="${ANIMAL_IMAGES[clue.image]}" alt="${clue.animal}" style="width: 80px; height: 80px; border-radius: 8px; border: 2px solid #fbbf24; flex-shrink: 0;" />
+                                <div style="flex: 1;">
+                                    <div class="animal-name">${clue.animal}</div>
+                                    <div class="quote-text">"${clue.quote}"</div>
+                                </div>
+                            </div>
                     `;
 
                     if (matches[clue.id]) {
