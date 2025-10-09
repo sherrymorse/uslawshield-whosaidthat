@@ -586,7 +586,13 @@
 
                     const self = this;
                     db.ref('players/' + playerId).on('value', (snapshot) => {
-                        self.state.playerData = snapshot.val();
+                        const data = snapshot.val();
+                        if (data) {
+                            self.state.playerData = data;
+                            if (self.state.playerId) {
+                                self.render();
+                            }
+                        }
                     });
 
                     this.startTimer();
@@ -629,6 +635,14 @@
 
                 matches[clueId] = employeeId;
 
+                // Update local state immediately
+                this.state.playerData.matches = matches;
+                this.state.playerData.history = history;
+                
+                // Render immediately
+                this.render();
+
+                // Then save to Firebase
                 await db.ref('players/' + this.state.playerId).update({
                     matches,
                     history,
@@ -647,6 +661,14 @@
 
                 delete matches[clueId];
 
+                // Update local state immediately
+                this.state.playerData.matches = matches;
+                this.state.playerData.history = history;
+                
+                // Render immediately
+                this.render();
+
+                // Then save to Firebase
                 await db.ref('players/' + this.state.playerId).update({
                     matches,
                     history,
@@ -661,6 +683,15 @@
                 if (history.length === 0) return;
 
                 const previousState = history.pop();
+                
+                // Update local state immediately
+                this.state.playerData.matches = previousState.matches;
+                this.state.playerData.history = history;
+                
+                // Render immediately
+                this.render();
+
+                // Then save to Firebase
                 await db.ref('players/' + this.state.playerId).update({
                     matches: previousState.matches,
                     history,
