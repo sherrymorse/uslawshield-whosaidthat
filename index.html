@@ -20,6 +20,7 @@
         body {
             font-family: 'Poppins', sans-serif;
             background: linear-gradient(135deg, #1e40af 0%, #7c3aed 50%, #ec4899 100%);
+            background: -moz-linear-gradient(135deg, #1e40af 0%, #7c3aed 50%, #ec4899 100%);
             min-height: 100vh;
             line-height: 1.5;
         }
@@ -150,6 +151,7 @@
             color: #f3f4f6;
             line-height: 1.6;
             flex-grow: 1;
+            max-width: calc(100% - 240px);
         }
         .drop-zone {
             position: absolute;
@@ -430,7 +432,7 @@
                     showAdminPassword: false,
                     tempAdminName: null,
                     showAdminPanel: false,
-                    isLoading: false
+                    isLoading: true
                 };
                 this.initializeClues();
                 this.startPresenceTracking();
@@ -441,31 +443,26 @@
                     const savedSession = sessionStorage.getItem('animalGameSession');
                     if (savedSession) {
                         const session = JSON.parse(savedSession);
-                        console.log('Restoring session for:', session.playerName);
-                        const timeoutPromise = new Promise((_, reject) => {
-                            setTimeout(() => reject(new Error('Session restore timeout')), 5000);
-                        });
-                        const initPromise = this.initializePlayer(session.playerName, session.isAdmin);
-                        await Promise.race([initPromise, timeoutPromise]);
-                        if (await initPromise) {
-                            console.log('Session restored successfully');
+                        const success = await this.initializePlayer(session.playerName, session.isAdmin);
+                        if (success) {
+                            this.state.isLoading = false;
+                            this.render();
                             return;
                         }
                     }
                 } catch (error) {
                     console.error('Session recovery error:', error);
                     sessionStorage.removeItem('animalGameSession');
-                    alert('Session restore failed. Please log in again.');
                 }
                 this.state.isLoading = false;
                 this.render();
             }
             initializeClues() {
-                this.state.shuffledClues = EMPLOYEES.map(emp => ({
-                    id: emp.id,
-                    animal: emp.animal,
+                this.state.shuffledClues = EMPLOYEES.map(emp => ({ 
+                    id: emp.id, 
+                    animal: emp.animal, 
                     quote: emp.quote,
-                    image: emp.image
+                    image: emp.image 
                 })).sort(() => Math.random() - 0.5);
             }
             startPresenceTracking() {
@@ -570,7 +567,9 @@
                         const data = snapshot.val();
                         if (data) {
                             self.state.playerData = data;
-                            self.render();
+                            if (self.state.playerId && !self.state.isLoading) {
+                                self.render();
+                            }
                         }
                     });
                     this.startTimer();
@@ -582,20 +581,16 @@
                 }
             }
             async loadAllPlayers() {
-                try {
-                    const snapshot = await db.ref('players').once('value');
-                    const allPlayers = snapshot.val() || {};
-                    this.state.allPlayers = Object.entries(allPlayers)
-                        .filter(([id, data]) => {
-                            return data.matches !== undefined || data.isSubmitted !== undefined || data.checksUsed !== undefined;
-                        })
-                        .map(([id, data]) => ({
-                            id,
-                            ...data
-                        }));
-                } catch (error) {
-                    console.error('Error loading players:', error);
-                }
+                const snapshot = await db.ref('players').once('value');
+                const allPlayers = snapshot.val() || {};
+                this.state.allPlayers = Object.entries(allPlayers)
+                    .filter(([id, data]) => {
+                        return data.matches !== undefined || data.isSubmitted !== undefined || data.checksUsed !== undefined;
+                    })
+                    .map(([id, data]) => ({
+                        id,
+                        ...data
+                    }));
             }
             async handleMatch(clueId, employeeId) {
                 if (!this.state.playerId || this.state.playerData.isSubmitted) return;
@@ -611,15 +606,11 @@
                 this.state.playerData.matches = matches;
                 this.state.playerData.history = history;
                 this.render();
-                try {
-                    await db.ref('players/' + this.state.playerId).update({
-                        matches,
-                        history,
-                        lastActive: Date.now()
-                    });
-                } catch (error) {
-                    console.error('Error updating matches:', error);
-                }
+                await db.ref('players/' + this.state.playerId).update({
+                    matches,
+                    history,
+                    lastActive: Date.now()
+                });
             }
             async handleClear(clueId) {
                 if (!this.state.playerId || this.state.playerData.isSubmitted) return;
@@ -631,15 +622,11 @@
                 this.state.playerData.matches = matches;
                 this.state.playerData.history = history;
                 this.render();
-                try {
-                    await db.ref('players/' + this.state.playerId).update({
-                        matches,
-                        history,
-                        lastActive: Date.now()
-                    });
-                } catch (error) {
-                    console.error('Error clearing match:', error);
-                }
+                await db.ref('players/' + this.state.playerId).update({
+                    matches,
+                    history,
+                    lastActive: Date.now()
+                });
             }
             async handleUndo() {
                 if (!this.state.playerId || this.state.playerData.isSubmitted) return;
@@ -649,15 +636,11 @@
                 this.state.playerData.matches = previousState.matches;
                 this.state.playerData.history = history;
                 this.render();
-                try {
-                    await db.ref('players/' + this.state.playerId).update({
-                        matches: previousState.matches,
-                        history,
-                        lastActive: Date.now()
-                    });
-                } catch (error) {
-                    console.error('Error undoing match:', error);
-                }
+                await db.ref('players/' + this.state.playerId).update({
+                    matches: previousState.matches,
+                    history,
+                    lastActive: Date.now()
+                });
             }
             calculateCorrect() {
                 const matches = this.state.playerData.matches || {};
@@ -684,14 +667,10 @@
                     self.state.correctCount = correct;
                     self.state.showLeverResult = true;
                     self.state.leverPulled = false;
-                    try {
-                        await db.ref('players/' + self.state.playerId).update({
-                            checksUsed: self.state.playerData.checksUsed + 1,
-                            lastActive: Date.now()
-                        });
-                    } catch (error) {
-                        console.error('Error updating checks:', error);
-                    }
+                    await db.ref('players/' + self.state.playerId).update({
+                        checksUsed: self.state.playerData.checksUsed + 1,
+                        lastActive: Date.now()
+                    });
                     self.render();
                     setTimeout(() => {
                         self.state.showLeverResult = false;
@@ -709,17 +688,13 @@
                 const correct = this.calculateCorrect();
                 this.state.correctCount = correct;
                 this.stopTimer();
-                try {
-                    await db.ref('players/' + this.state.playerId).update({
-                        isSubmitted: true,
-                        finalScore: correct,
-                        completionTime: this.state.elapsedTime,
-                        submittedAt: Date.now(),
-                        lastActive: Date.now()
-                    });
-                } catch (error) {
-                    console.error('Error submitting final:', error);
-                }
+                await db.ref('players/' + this.state.playerId).update({
+                    isSubmitted: true,
+                    finalScore: correct,
+                    completionTime: this.state.elapsedTime,
+                    submittedAt: Date.now(),
+                    lastActive: Date.now()
+                });
                 this.state.showLeverResult = true;
                 this.render();
             }
@@ -728,84 +703,64 @@
                 this.initializeClues();
                 this.stopTimer();
                 this.state.elapsedTime = 0;
-                try {
-                    await db.ref('players/' + this.state.playerId).update({
-                        matches: {},
-                        checksUsed: 0,
-                        isSubmitted: false,
-                        history: [],
-                        finalScore: null,
-                        completionTime: null,
-                        lastActive: Date.now()
-                    });
-                } catch (error) {
-                    console.error('Error resetting player:', error);
-                }
+                await db.ref('players/' + this.state.playerId).update({
+                    matches: {},
+                    checksUsed: 0,
+                    isSubmitted: false,
+                    history: [],
+                    finalScore: null,
+                    completionTime: null,
+                    lastActive: Date.now()
+                });
                 this.startTimer();
             }
             async addPlayer(name) {
                 const playersRef = db.ref('players');
-                try {
-                    const snapshot = await playersRef.once('value');
-                    const players = snapshot.val() || {};
-                    for (const [id, data] of Object.entries(players)) {
-                        if (data.name && data.name.toLowerCase() === name.toLowerCase()) {
-                            alert('Player "' + name + '" already exists!');
-                            return;
-                        }
+                const snapshot = await playersRef.once('value');
+                const players = snapshot.val() || {};
+                for (const [id, data] of Object.entries(players)) {
+                    if (data.name && data.name.toLowerCase() === name.toLowerCase()) {
+                        alert('Player "' + name + '" already exists!');
+                        return;
                     }
-                    const newPlayerRef = playersRef.push();
-                    await newPlayerRef.set({
-                        name,
-                        matches: {},
-                        checksUsed: 0,
-                        isSubmitted: false,
-                        createdAt: Date.now(),
-                        lastActive: Date.now()
-                    });
-                    alert('Player "' + name + '" added successfully!');
-                    await this.loadAllPlayers();
-                    this.render();
-                } catch (error) {
-                    console.error('Error adding player:', error);
                 }
+                const newPlayerRef = playersRef.push();
+                await newPlayerRef.set({
+                    name,
+                    matches: {},
+                    checksUsed: 0,
+                    isSubmitted: false,
+                    createdAt: Date.now(),
+                    lastActive: Date.now()
+                });
+                alert('Player "' + name + '" added successfully!');
+                await this.loadAllPlayers();
+                this.render();
             }
             async deletePlayer(playerId) {
                 if (!confirm('Delete this player?')) return;
-                try {
-                    await db.ref('players/' + playerId).remove();
-                    await this.loadAllPlayers();
-                    this.render();
-                } catch (error) {
-                    console.error('Error deleting player:', error);
-                }
+                await db.ref('players/' + playerId).remove();
+                await this.loadAllPlayers();
+                this.render();
             }
             async kickPlayer(playerId) {
                 if (!confirm('Kick this player from the game?')) return;
-                try {
-                    await db.ref('players/' + playerId).update({
-                        kicked: true,
-                        lastActive: Date.now()
-                    });
-                    await this.loadAllPlayers();
-                    this.render();
-                } catch (error) {
-                    console.error('Error kicking player:', error);
-                }
+                await db.ref('players/' + playerId).update({
+                    kicked: true,
+                    lastActive: Date.now()
+                });
+                await this.loadAllPlayers();
+                this.render();
             }
             async clearPlayerChoices(playerId) {
                 if (!confirm('Clear this player\'s choices?')) return;
-                try {
-                    await db.ref('players/' + playerId).update({
-                        matches: {},
-                        history: [],
-                        lastActive: Date.now()
-                    });
-                    await this.loadAllPlayers();
-                    this.render();
-                } catch (error) {
-                    console.error('Error clearing player choices:', error);
-                }
+                await db.ref('players/' + playerId).update({
+                    matches: {},
+                    history: [],
+                    lastActive: Date.now()
+                });
+                await this.loadAllPlayers();
+                this.render();
             }
             setupDragAndDrop() {
                 const self = this;
@@ -855,10 +810,20 @@
                     <div class="admin-mini-panel">
                         <div class="admin-mini-header">
                             <h3 class="text-lg font-bold text-yellow-400">Admin Panel</h3>
-                            <button onclick="game.toggleAdminPanel()" class="text-white hover:text-red-400 font-bold text-xl">✕</button>
+                            <button
+                                onclick="game.toggleAdminPanel()"
+                                class="text-white hover:text-red-400 font-bold text-xl"
+                            >
+                                ✕
+                            </button>
                         </div>
                         <div class="mb-4">
-                            <button onclick="game.refreshPlayers()" class="w-full bg-blue-500 text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-600 text-sm mb-2">Refresh Players</button>
+                            <button
+                                onclick="game.refreshPlayers()"
+                                class="w-full bg-blue-500 text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-600 text-sm mb-2"
+                            >
+                                Refresh Players
+                            </button>
                         </div>
                         <div class="space-y-2">
                             ${this.state.allPlayers.map(player => {
@@ -871,12 +836,29 @@
                                             <span class="status-badge status-${status} text-xs">${status}</span>
                                         </div>
                                         <div class="text-gray-300 text-xs mb-2">
-                                            Progress: ${matchCount}/${EMPLOYEES.length} | Checks: ${player.checksUsed || 0}/2 | ${player.isSubmitted ? 'Score: ' + player.finalScore : 'Playing'}
+                                            Progress: ${matchCount}/${EMPLOYEES.length} | 
+                                            Checks: ${player.checksUsed || 0}/2 | 
+                                            ${player.isSubmitted ? 'Score: ' + player.finalScore : 'Playing'}
                                         </div>
                                         <div class="flex gap-1">
-                                            <button onclick="game.clearPlayerChoices('${player.id}')" class="flex-1 bg-orange-500 text-white px-2 py-1 rounded text-xs font-bold hover:bg-orange-600">Clear</button>
-                                            <button onclick="game.kickPlayer('${player.id}')" class="flex-1 bg-red-500 text-white px-2 py-1 rounded text-xs font-bold hover:bg-red-600">Kick</button>
-                                            <button onclick="game.deletePlayer('${player.id}')" class="flex-1 bg-gray-600 text-white px-2 py-1 rounded text-xs font-bold hover:bg-gray-500">Delete</button>
+                                            <button
+                                                onclick="game.clearPlayerChoices('${player.id}')"
+                                                class="flex-1 bg-orange-500 text-white px-2 py-1 rounded text-xs font-bold hover:bg-orange-600"
+                                            >
+                                                Clear
+                                            </button>
+                                            <button
+                                                onclick="game.kickPlayer('${player.id}')"
+                                                class="flex-1 bg-red-500 text-white px-2 py-1 rounded text-xs font-bold hover:bg-red-600"
+                                            >
+                                                Kick
+                                            </button>
+                                            <button
+                                                onclick="game.deletePlayer('${player.id}')"
+                                                class="flex-1 bg-gray-600 text-white px-2 py-1 rounded text-xs font-bold hover:bg-gray-500"
+                                            >
+                                                Delete
+                                            </button>
                                         </div>
                                     </div>
                                 `;
@@ -887,7 +869,12 @@
             }
             getAdminToggleButton() {
                 return `
-                    <button onclick="game.toggleAdminPanel()" class="admin-toggle-btn">👤 Admin Panel</button>
+                    <button
+                        onclick="game.toggleAdminPanel()"
+                        class="admin-toggle-btn"
+                    >
+                        👤 Admin Panel
+                    </button>
                 `;
             }
             toggleAdminPanel() {
@@ -912,10 +899,28 @@
                             <div class="space-y-4">
                                 <div>
                                     <label class="block text-sm font-bold text-gray-700 mb-2">Your Name</label>
-                                    <input type="text" id="nameInput" placeholder="Enter your name" class="login-input" onkeypress="if(event.key === 'Enter') game.login()" />
+                                    <input
+                                        type="text"
+                                        id="nameInput"
+                                        placeholder="Enter your name"
+                                        class="login-input"
+                                        onkeypress="if(event.key === 'Enter') game.login()"
+                                    />
                                 </div>
-                                <button onclick="game.login()" class="login-button" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;">Start Playing</button>
-                                <button onclick="sessionStorage.clear(); location.reload();" class="login-button text-sm" style="background: #e5e7eb; color: #6b7280; padding: 0.5rem 1rem;">Clear Session & Reload</button>
+                                <button
+                                    onclick="game.login()"
+                                    class="login-button"
+                                    style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;"
+                                >
+                                    Start Playing
+                                </button>
+                                <button
+                                    onclick="sessionStorage.clear(); location.reload();"
+                                    class="login-button text-sm"
+                                    style="background: #e5e7eb; color: #6b7280; padding: 0.5rem 1rem;"
+                                >
+                                    Clear Session & Reload
+                                </button>
                             </div>
                             <div class="mt-8 pt-6 border-t border-gray-200">
                                 <h3 class="text-sm font-bold text-gray-700 mb-3">Players Online</h3>
@@ -948,10 +953,28 @@
                             <div class="space-y-4">
                                 <div>
                                     <label class="block text-sm font-bold text-gray-700 mb-2">Admin Password</label>
-                                    <input type="password" id="adminPassword" placeholder="Enter password" class="login-input" onkeypress="if(event.key === 'Enter') game.verifyAdminPassword()" />
+                                    <input
+                                        type="password"
+                                        id="adminPassword"
+                                        placeholder="Enter password"
+                                        class="login-input"
+                                        onkeypress="if(event.key === 'Enter') game.verifyAdminPassword()"
+                                    />
                                 </div>
-                                <button onclick="game.verifyAdminPassword()" class="login-button" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white;">Login as Admin</button>
-                                <button onclick="game.state.showAdminPassword = false; game.state.tempAdminName = null; game.render();" class="login-button" style="background: #e5e7eb; color: #374151;">Cancel</button>
+                                <button
+                                    onclick="game.verifyAdminPassword()"
+                                    class="login-button"
+                                    style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white;"
+                                >
+                                    Login as Admin
+                                </button>
+                                <button
+                                    onclick="game.state.showAdminPassword = false; game.state.tempAdminName = null; game.render();"
+                                    class="login-button"
+                                    style="background: #e5e7eb; color: #374151;"
+                                >
+                                    Cancel
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -969,11 +992,18 @@
                     ${this.state.isAdmin ? (this.state.showAdminPanel ? this.getMiniAdminPanel() : this.getAdminToggleButton()) : ''}
                     <div class="max-w-7xl mx-auto py-8">
                         <div class="text-center mb-8">
-                            <h1 class="text-6xl font-bold text-white mb-2" style="text-shadow: 3px 3px 0 #000, -1px -1px 0 #10b981;">ANIMAL GAME</h1>
+                            <h1 class="text-6xl font-bold text-white mb-2" style="text-shadow: 3px 3px 0 #000, -1px -1px 0 #10b981;">
+                                ANIMAL GAME
+                            </h1>
                             <p class="text-2xl text-yellow-300 font-bold">Who Said That?</p>
                             <p class="text-xl text-white mt-2">Welcome, ${this.state.playerData.name}!</p>
                             ${this.state.isAdmin ? `
-                                <button onclick="game.logout()" class="mt-4 bg-red-500 text-white px-6 py-2 rounded-lg font-bold hover:bg-red-600 transition-all">Admin Logout</button>
+                                <button
+                                    onclick="game.logout()"
+                                    class="mt-4 bg-red-500 text-white px-6 py-2 rounded-lg font-bold hover:bg-red-600 transition-all"
+                                >
+                                    Admin Logout
+                                </button>
                             ` : ''}
                         </div>
                 `;
@@ -996,13 +1026,20 @@
                                             Time: ${this.formatTime(this.state.playerData.completionTime)}
                                         </div>
                                         <div class="bg-yellow-100 border-4 border-yellow-500 rounded-lg p-6 mt-6">
-                                            <p class="text-center text-lg font-bold text-gray-900 mb-2">📸 IMPORTANT!</p>
+                                            <p class="text-center text-lg font-bold text-gray-900 mb-2">
+                                                📸 IMPORTANT!
+                                            </p>
                                             <p class="text-center text-base font-semibold text-gray-800">
                                                 Please SCREENSHOT this screen and send it to<br>
                                                 <span class="text-blue-600">Sherry Morse</span> for validation!
                                             </p>
                                         </div>
-                                        <button onclick="game.resetPlayer()" class="w-full mt-6 bg-green-500 text-white py-4 rounded-lg font-bold text-xl hover:bg-green-600">PLAY AGAIN</button>
+                                        <button
+                                            onclick="game.resetPlayer()"
+                                            class="w-full mt-6 bg-green-500 text-white py-4 rounded-lg font-bold text-xl hover:bg-green-600"
+                                        >
+                                            PLAY AGAIN
+                                        </button>
                                     ` : ''}
                                 </div>
                             </div>
@@ -1010,12 +1047,14 @@
                     `;
                 }
                 html += `
-                    <div class="grid lg:grid-cols-3 gap-8 mb-8">
-                        <div class="lg:col-span-2">
-                            <div class="race-game-border">
-                                <div class="race-game-inner p-6">
-                                    <div class="race-game-header">🦁 ANIMALS & QUOTES</div>
-                                    <div class="space-y-3 mt-6">
+                        <div class="grid lg:grid-cols-3 gap-8 mb-8">
+                            <div class="lg:col-span-2">
+                                <div class="race-game-border">
+                                    <div class="race-game-inner p-6">
+                                        <div class="race-game-header">
+                                            🦁 ANIMALS & QUOTES
+                                        </div>
+                                        <div class="space-y-3 mt-6">
                 `;
                 this.state.shuffledClues.forEach(clue => {
                     html += `
@@ -1023,7 +1062,7 @@
                             <div style="display: flex; align-items: flex-start; gap: 1rem;">
                                 <img src="${ANIMAL_IMAGES[clue.image]}" alt="${clue.animal}" class="animal-image" />
                                 <div style="flex: 1;">
-                                    <div class="animal-name">${clue.animal}</div>
+                                    <div class="animal-name">🐾 ${clue.animal}</div>
                                     <div class="quote-text">"${clue.quote}"</div>
                                 </div>
                             </div>
@@ -1045,57 +1084,79 @@
                     html += `</div>`;
                 });
                 html += `
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        <div>
-                            <div class="name-rack">
-                                <div class="race-game-header text-center" style="margin: -1.5rem -1.5rem 0 -1.5rem;">🏷️ NAME TAGS</div>
-                                <p class="text-center text-white mt-4 text-sm font-bold">Drag names to quotes</p>
-                                <div class="tag-container">
+                            <div>
+                                <div class="name-rack">
+                                    <div class="race-game-header text-center" style="margin: -1.5rem -1.5rem 0 -1.5rem;">
+                                        🏷️ NAME TAGS
+                                    </div>
+                                    <p class="text-center text-white mt-4 text-sm font-bold">Drag names to quotes</p>
+                                    <div class="tag-container">
                 `;
                 EMPLOYEES.forEach(employee => {
                     const isAssigned = Object.values(matches).includes(employee.id);
                     if (isAssigned && !this.state.playerData.isSubmitted) return;
                     html += `
-                        <div class="neon-tag" draggable="${!this.state.playerData.isSubmitted && !isAssigned}" data-employee-id="${employee.id}" style="${isAssigned ? 'opacity: 0.3; cursor: not-allowed;' : ''}">
+                        <div class="neon-tag" 
+                             draggable="${!this.state.playerData.isSubmitted && !isAssigned}"
+                             data-employee-id="${employee.id}"
+                             style="${isAssigned ? 'opacity: 0.3; cursor: not-allowed;' : ''}">
                             ${employee.name}
                         </div>
                     `;
                 });
                 html += `
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="race-game-border">
-                        <div class="race-game-inner p-6">
-                            <div class="flex flex-wrap items-center justify-center gap-8">
-                                <div class="text-center">
-                                    <div class="lever-container" style="cursor: ${canPullLever ? 'pointer' : 'not-allowed'};" onclick="${canPullLever ? 'game.pullLever()' : ''}">
-                                        <div class="lever-arm ${this.state.leverPulled ? 'pulled' : ''}">
-                                            <div class="lever-handle"></div>
+                        <div class="race-game-border">
+                            <div class="race-game-inner p-6">
+                                <div class="flex flex-wrap items-center justify-center gap-8">
+                                    <div class="text-center">
+                                        <div class="lever-container" style="cursor: ${canPullLever ? 'pointer' : 'not-allowed'};" onclick="${canPullLever ? 'game.pullLever()' : ''}">
+                                            <div class="lever-arm ${this.state.leverPulled ? 'pulled' : ''}">
+                                                <div class="lever-handle"></div>
+                                            </div>
+                                            <div class="lever-base"></div>
                                         </div>
-                                        <div class="lever-base"></div>
+                                        <div class="mt-4 text-sm font-bold" style="color: #064e3b;">
+                                            PULL TO CHECK<br>
+                                            (${checksRemaining} checks left)
+                                        </div>
                                     </div>
-                                    <div class="mt-4 text-sm font-bold" style="color: #064e3b;">
-                                        PULL TO CHECK<br>
-                                        (${checksRemaining} checks left)
+                                    <div class="flex flex-col gap-4">
+                                        <div class="text-center text-2xl font-bold" style="color: #064e3b;">
+                                            MATCHED: ${matchCount} / ${EMPLOYEES.length}
+                                        </div>
+                                        <button
+                                            onclick="game.submitFinal()"
+                                            ${this.state.playerData.isSubmitted || matchCount !== EMPLOYEES.length ? 'disabled' : ''}
+                                            class="bg-green-500 text-white px-8 py-4 rounded-xl font-bold text-xl hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            SUBMIT FINAL
+                                        </button>
+                                        <button
+                                            onclick="game.handleUndo()"
+                                            ${this.state.playerData.isSubmitted || !this.state.playerData.history || this.state.playerData.history.length === 0 ? 'disabled' : ''}
+                                            class="bg-yellow-500 text-black px-8 py-3 rounded-xl font-bold hover:bg-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            UNDO (${this.state.playerData.history ? this.state.playerData.history.length : 0})
+                                        </button>
+                                        <button
+                                            onclick="game.resetPlayer()"
+                                            class="bg-red-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-red-600"
+                                        >
+                                            RESET GAME
+                                        </button>
                                     </div>
-                                </div>
-                                <div class="flex flex-col gap-4">
-                                    <div class="text-center text-2xl font-bold" style="color: #064e3b;">
-                                        MATCHED: ${matchCount} / ${EMPLOYEES.length}
-                                    </div>
-                                    <button onclick="game.submitFinal()" ${this.state.playerData.isSubmitted || matchCount !== EMPLOYEES.length ? 'disabled' : ''} class="bg-green-500 text-white px-8 py-4 rounded-xl font-bold text-xl hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed">SUBMIT FINAL</button>
-                                    <button onclick="game.handleUndo()" ${this.state.playerData.isSubmitted || !this.state.playerData.history || this.state.playerData.history.length === 0 ? 'disabled' : ''} class="bg-yellow-500 text-black px-8 py-3 rounded-xl font-bold hover:bg-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed">UNDO (${this.state.playerData.history ? this.state.playerData.history.length : 0})</button>
-                                    <button onclick="game.resetPlayer()" class="bg-red-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-red-600">RESET GAME</button>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
                 `;
                 return html;
             }
@@ -1153,7 +1214,12 @@
                                 <div class="text-6xl mb-4">🐾</div>
                                 <div class="text-2xl font-bold text-white">Loading Animal Game...</div>
                                 <div class="mt-4">
-                                    <button onclick="sessionStorage.clear(); location.reload();" class="bg-white text-purple-600 px-6 py-2 rounded-lg font-bold hover:bg-gray-100">Stuck? Click to Reset</button>
+                                    <button
+                                        onclick="sessionStorage.clear(); location.reload();"
+                                        class="bg-white text-purple-600 px-6 py-2 rounded-lg font-bold hover:bg-gray-100"
+                                    >
+                                        Stuck? Click to Reset
+                                    </button>
                                 </div>
                             </div>
                         </div>
