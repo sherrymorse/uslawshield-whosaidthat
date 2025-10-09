@@ -6,29 +6,21 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://uslawshield-whosaidthat-default-rtdb.firebaseio.com">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://uslawshield-whosaidthat-default-rtdb.firebaseio.com">
     <title>Animal Game - Who Said That?</title>
     <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-database-compat.js"></script>
-    <link href="./output.css" rel="stylesheet">
+    <link href="./output.css" rel="stylesheet" onerror="console.error('Failed to load output.css')">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Poppins:wght@400;600;700;800;900&display=swap');
 
-        /* CSS Reset for cross-browser consistency */
-        *,
-        *::before,
-        *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
+        /* Minimal reset for consistency */
         body {
             font-family: 'Poppins', sans-serif;
             background: linear-gradient(135deg, #1e40af 0%, #7c3aed 50%, #ec4899 100%);
             background: -moz-linear-gradient(135deg, #1e40af 0%, #7c3aed 50%, #ec4899 100%);
             min-height: 100vh;
-            line-height: 1.5;
+            margin: 0;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -64,13 +56,13 @@
             border-radius: 12px;
             font-family: 'Orbitron', monospace;
             color: #ff0000;
-            font-size: 6rem;
+            font-size: 4rem;
             font-weight: 900;
             text-align: center;
-            padding: 2rem;
+            padding: 1.5rem;
             box-shadow: inset 0 0 20px rgba(255,0,0,0.3), 0 0 30px rgba(34,197,94,0.5);
             letter-spacing: 0.5rem;
-            min-height: 150px;
+            min-height: 120px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -168,6 +160,7 @@
             font-weight: 500;
             color: #f3f4f6;
             line-height: 1.6;
+            max-width: calc(100% - 240px);
         }
         .drop-zone {
             position: absolute;
@@ -471,12 +464,26 @@
                         tempAdminName: null,
                         showAdminPanel: false
                     };
-                    const storedShuffledClues = localStorage.getItem('shuffledClues');
-                    if (storedShuffledClues) {
-                        this.state.shuffledClues = JSON.parse(storedShuffledClues);
-                    } else {
+                    try {
+                        const storedShuffledClues = localStorage.getItem('shuffledClues');
+                        if (storedShuffledClues) {
+                            try {
+                                this.state.shuffledClues = JSON.parse(storedShuffledClues);
+                                if (!Array.isArray(this.state.shuffledClues) || this.state.shuffledClues.length !== EMPLOYEES.length) {
+                                    throw new Error('Invalid shuffledClues in localStorage');
+                                }
+                            } catch (e) {
+                                console.error('Error parsing shuffledClues:', e);
+                                this.initializeClues();
+                                localStorage.setItem('shuffledClues', JSON.stringify(this.state.shuffledClues));
+                            }
+                        } else {
+                            this.initializeClues();
+                            localStorage.setItem('shuffledClues', JSON.stringify(this.state.shuffledClues));
+                        }
+                    } catch (e) {
+                        console.error('Error initializing clues:', e);
                         this.initializeClues();
-                        localStorage.setItem('shuffledClues', JSON.stringify(this.state.shuffledClues));
                     }
                     this.startPresenceTracking();
                     const storedPlayerId = localStorage.getItem('playerId');
@@ -484,6 +491,7 @@
                         console.log('Restoring session from localStorage with playerId:', storedPlayerId);
                         const self = this;
                         db.ref('players/' + storedPlayerId).once('value').then(snapshot => {
+                            console.log('Fetched player data for ID:', storedPlayerId);
                             self.state.playerData = snapshot.val();
                             if (self.state.playerData) {
                                 self.state.playerId = storedPlayerId;
@@ -512,11 +520,11 @@
                             self.render();
                         });
                     } else {
+                        console.log('No stored playerId, rendering login');
                         this.render();
                     }
-                    // Timeout to detect render hang
                     setTimeout(() => {
-                        if (document.getElementById('app').innerHTML.includes('Loading...')) {
+                        if (document.getElementById('app')?.innerHTML.includes('Loading...')) {
                             console.error('Render timeout: still on Loading...');
                             alert('App failed to load. Please check console for errors.');
                             this.render();
@@ -524,6 +532,7 @@
                     }, 5000);
                 }
                 clearLocalStorage() {
+                    console.log('Clearing localStorage');
                     localStorage.removeItem('playerId');
                     localStorage.removeItem('shuffledClues');
                 }
@@ -536,6 +545,7 @@
                     })).sort(() => Math.random() - 0.5);
                 }
                 startPresenceTracking() {
+                    console.log('Starting presence tracking');
                     setInterval(() => {
                         if (this.state.playerId) {
                             db.ref('players/' + this.state.playerId).update({
@@ -545,6 +555,7 @@
                     }, 10000);
                 }
                 startTimer() {
+                    console.log('Starting timer');
                     this.state.startTime = Date.now();
                     this.state.timerInterval = setInterval(() => {
                         this.state.elapsedTime = Math.floor((Date.now() - this.state.startTime) / 1000);
@@ -555,6 +566,7 @@
                     }, 1000);
                 }
                 stopTimer() {
+                    console.log('Stopping timer');
                     if (this.state.timerInterval) {
                         clearInterval(this.state.timerInterval);
                         this.state.timerInterval = null;
@@ -691,7 +703,7 @@
                     }).catch(error => console.error('Firebase update error:', error));
                     const correct = parseInt(clueId) === employeeId;
                     const remaining = EMPLOYEES.length - Object.keys(matches).length;
-                    const animal = this.state.shuffledClues.find(clue => clue.id === clueId).animal;
+                    const animal = this.state.shuffledClues.find(clue => clue.id === clueId)?.animal || 'Unknown';
                     await db.ref('notifications').push({
                         playerName: this.state.playerData.name,
                         clue: animal,
@@ -758,8 +770,8 @@
                         const correct = self.calculateCorrect();
                         console.log('Correct matches:', correct);
                         self.state.correctCount = correct;
-                        self.state.showLeverResult = true;
                         self.state.leverPulled = false;
+                        self.state.showLeverResult = true;
                         await db.ref('players/' + self.state.playerId).update({
                             checksUsed: self.state.playerData.checksUsed + 1,
                             lastActive: Date.now()
@@ -794,8 +806,10 @@
                     this.render();
                 }
                 handleEscKey = (event) => {
-                    if (event.key === 'Escape') {
+                    if (event.key === 'Escape' && this.state.showLeverResult) {
+                        console.log('ESC key pressed, logging out');
                         this.state.showLeverResult = false;
+                        document.removeEventListener('keydown', this.handleEscKey);
                         this.logout();
                     }
                 }
@@ -910,58 +924,11 @@
                     this.render();
                 }
                 listenForNotifications() {
+                    console.log('Listening for notifications');
                     const self = this;
                     db.ref('notifications').on('child_added', (snapshot) => {
                         const notification = snapshot.val();
                         alert(`${notification.playerName} marked an answer for ${notification.clue}: ${notification.correct ? 'Correct' : 'Incorrect'}. Remaining: ${notification.remaining}`);
-                    });
-                }
-                setupDragAndDrop() {
-                    console.log('Setting up drag-and-drop listeners');
-                    const self = this;
-                    document.querySelectorAll('.neon-tag:not(.placed)').forEach(tag => {
-                        tag.addEventListener('dragstart', (e) => {
-                            console.log('Drag start:', e.target.dataset.employeeId);
-                            const employeeId = parseInt(e.target.dataset.employeeId);
-                            self.state.draggedEmployeeId = employeeId;
-                            e.target.classList.add('dragging');
-                            e.dataTransfer.effectAllowed = 'move';
-                        });
-                        tag.addEventListener('dragend', (e) => {
-                            console.log('Drag end');
-                            e.target.classList.remove('dragging');
-                            self.state.draggedEmployeeId = null;
-                        });
-                    });
-                    document.querySelectorAll('.drop-zone').forEach(zone => {
-                        zone.addEventListener('dragover', (e) => {
-                            e.preventDefault();
-                            e.dataTransfer.dropEffect = 'move';
-                            zone.classList.add('drag-over');
-                            console.log('Drag over zone:', zone.dataset.clueId);
-                        });
-                        zone.addEventListener('dragleave', () => {
-                            zone.classList.remove('drag-over');
-                            console.log('Drag leave zone');
-                        });
-                        zone.addEventListener('drop', (e) => {
-                            e.preventDefault();
-                            zone.classList.remove('drag-over');
-                            console.log('Dropped on zone:', zone.dataset.clueId, 'Employee:', self.state.draggedEmployeeId);
-                            if (self.state.draggedEmployeeId && !self.state.playerData.isSubmitted) {
-                                const clueId = parseInt(zone.dataset.clueId);
-                                self.handleMatch(clueId, self.state.draggedEmployeeId);
-                            }
-                        });
-                    });
-                    document.querySelectorAll('.neon-tag.placed').forEach(tag => {
-                        tag.addEventListener('click', () => {
-                            if (!self.state.playerData.isSubmitted) {
-                                const clueId = parseInt(tag.dataset.clueId);
-                                console.log('Clearing tag for clue:', clueId);
-                                self.handleClear(clueId);
-                            }
-                        });
                     });
                 }
                 getLoginHTML() {
@@ -1048,7 +1015,7 @@
                 }
                 getAdminHTML() {
                     return `
-                        <div class="max-w-7xl mx-auto py-8">
+                        <div class="max-w-7xl mx-auto py-8 px-4">
                             <div class="admin-panel bg-black bg-opacity-90 border-4 border-yellow-400 rounded-2xl p-6 backdrop-blur-md">
                                 <div class="flex items-center justify-between mb-6">
                                     <div>
@@ -1235,10 +1202,10 @@
                     this.render();
                 }
                 getGameHTML() {
-                    const matches = this.state.playerData.matches || {};
+                    const matches = this.state.playerData?.matches || {};
                     const matchCount = Object.keys(matches).length;
-                    const checksRemaining = 2 - (this.state.playerData.checksUsed || 0);
-                    const canPullLever = matchCount === EMPLOYEES.length && checksRemaining > 0 && !this.state.playerData.isSubmitted;
+                    const checksRemaining = 2 - (this.state.playerData?.checksUsed || 0);
+                    const canPullLever = matchCount === EMPLOYEES.length && checksRemaining > 0 && !this.state.playerData?.isSubmitted;
                     let html = `
                         <div class="timer-badge">
                             ⏱️ <span id="timer">${this.formatTime(this.state.elapsedTime)}</span>
@@ -1246,11 +1213,11 @@
                         ${this.state.isAdmin ? (this.state.showAdminPanel ? this.getMiniAdminPanel() : this.getAdminToggleButton()) : ''}
                         <div class="max-w-7xl mx-auto py-8 px-4">
                             <div class="text-center mb-8">
-                                <h1 class="text-6xl font-bold text-white mb-2" style="text-shadow: 3px 3px 0 #000, -1px -1px 0 #10b981;">
+                                <h1 class="text-5xl font-bold text-white mb-2" style="text-shadow: 3px 3px 0 #000, -1px -1px 0 #10b981;">
                                     ANIMAL GAME
                                 </h1>
                                 <p class="text-2xl text-yellow-300 font-bold">Who Said That?</p>
-                                <p class="text-xl text-white mt-2">Welcome, ${this.state.playerData.name}!</p>
+                                <p class="text-xl text-white mt-2">Welcome, ${this.state.playerData?.name || 'Player'}!</p>
                                 ${this.state.isAdmin ? `
                                     <button
                                         onclick="game.logout()"
@@ -1272,16 +1239,16 @@
                                         <div class="text-center text-3xl font-bold mt-6 text-green-900">
                                             ${this.state.correctCount} CORRECT OUT OF ${EMPLOYEES.length}!
                                         </div>
-                                        <div class="text-center text-2xl font-bold mt-4 text-green-900">
-                                            Time: ${this.formatTime(this.state.playerData.completionTime)}
-                                        </div>
                                         ${this.state.playerData.isSubmitted ? `
+                                            <div class="text-center text-2xl font-bold mt-4 text-green-900">
+                                                Time: ${this.formatTime(this.state.playerData.completionTime)}
+                                            </div>
                                             <div class="mt-6 space-y-4">
                                                 ${this.state.shuffledClues.map(clue => {
                                                     const selectedId = matches[clue.id];
                                                     const selectedName = EMPLOYEES.find(e => e.id === selectedId)?.name || 'None';
                                                     const correctId = clue.id;
-                                                    const correctName = EMPLOYEES.find(e => e.id === correctId).name;
+                                                    const correctName = EMPLOYEES.find(e => e.id === correctId)?.name || 'Unknown';
                                                     const isCorrect = selectedId === correctId;
                                                     return `
                                                         <div class="bg-white p-4 rounded-lg shadow-md">
@@ -1334,10 +1301,10 @@
                                                 ${this.state.shuffledClues.map(clue => `
                                                     <div class="clue-card ${matches[clue.id] ? 'has-tag' : ''}">
                                                         <div class="animal-name">🐾 ${clue.animal}</div>
-                                                        <div class="quote-text" style="max-width: calc(100% - 240px);">"${clue.quote}"</div>
+                                                        <div class="quote-text">"${clue.quote}"</div>
                                                         ${matches[clue.id] ? `
                                                             <div class="neon-tag placed" data-clue-id="${clue.id}" data-employee-id="${matches[clue.id]}">
-                                                                ${EMPLOYEES.find(e => e.id === matches[clue.id]).name}
+                                                                ${EMPLOYEES.find(e => e.id === matches[clue.id])?.name || 'Unknown'}
                                                             </div>
                                                         ` : `
                                                             <div class="drop-zone" data-clue-id="${clue.id}">
@@ -1352,17 +1319,17 @@
                                 </div>
                                 <div class="lg:col-span-1">
                                     <div class="name-rack">
-                                        <div class="race-game-header text-center" style="margin: -1.5rem -1.5rem 0 -1.5rem;">
+                                        <div class="race-game-header text-center">
                                             🏷️ NAME TAGS
                                         </div>
                                         <p class="text-center text-white mt-4 text-sm font-bold">Drag names to quotes</p>
                                         <div class="tag-container">
                                             ${EMPLOYEES.map(employee => {
                                                 const isAssigned = Object.values(matches).includes(employee.id);
-                                                if (isAssigned && !this.state.playerData.isSubmitted) return '';
+                                                if (isAssigned && !this.state.playerData?.isSubmitted) return '';
                                                 return `
                                                     <div class="neon-tag"
-                                                         draggable="${!this.state.playerData.isSubmitted && !isAssigned}"
+                                                         draggable="${!this.state.playerData?.isSubmitted && !isAssigned}"
                                                          data-employee-id="${employee.id}"
                                                          style="${isAssigned ? 'opacity: 0.3; cursor: not-allowed;' : ''}">
                                                         ${employee.name}
@@ -1394,17 +1361,17 @@
                                             </div>
                                             <button
                                                 onclick="game.submitFinal()"
-                                                ${this.state.playerData.isSubmitted || matchCount !== EMPLOYEES.length ? 'disabled' : ''}
+                                                ${this.state.playerData?.isSubmitted || matchCount !== EMPLOYEES.length ? 'disabled' : ''}
                                                 class="bg-green-500 text-white px-8 py-4 rounded-xl font-bold text-xl hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 SUBMIT FINAL
                                             </button>
                                             <button
                                                 onclick="game.handleUndo()"
-                                                ${this.state.playerData.isSubmitted || !this.state.playerData.history || this.state.playerData.history.length === 0 ? 'disabled' : ''}
+                                                ${this.state.playerData?.isSubmitted || !this.state.playerData?.history || this.state.playerData?.history.length === 0 ? 'disabled' : ''}
                                                 class="bg-yellow-500 text-black px-8 py-3 rounded-xl font-bold hover:bg-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
-                                                UNDO (${this.state.playerData.history ? this.state.playerData.history.length : 0})
+                                                UNDO (${this.state.playerData?.history ? this.state.playerData.history.length : 0})
                                             </button>
                                             <button
                                                 onclick="game.resetPlayer()"
@@ -1421,7 +1388,7 @@
                     return html;
                 }
                 async login() {
-                    const playerName = document.getElementById('nameInput').value.trim();
+                    const playerName = document.getElementById('nameInput')?.value.trim();
                     if (!playerName) {
                         alert('Please enter your name!');
                         return;
@@ -1439,7 +1406,7 @@
                     }
                 }
                 async verifyAdminPassword() {
-                    const password = document.getElementById('adminPassword').value;
+                    const password = document.getElementById('adminPassword')?.value;
                     if (password !== ADMIN_PASSWORD) {
                         alert('Incorrect password! Please try again.');
                         document.getElementById('adminPassword').value = '';
@@ -1465,6 +1432,8 @@
                         this.state.showAdminPassword = false;
                         this.state.tempAdminName = null;
                         this.state.showAdminPanel = false;
+                        this.state.showLeverResult = false;
+                        document.removeEventListener('keydown', this.handleEscKey);
                         this.stopTimer();
                         this.render();
                     }
@@ -1476,19 +1445,34 @@
                         console.error('App element not found');
                         return;
                     }
-                    if (this.state.showAdminPassword) {
-                        app.innerHTML = this.getAdminPasswordPrompt();
-                    } else if (this.state.playerId && this.state.playerData) {
-                        app.innerHTML = this.getGameHTML();
-                        setTimeout(() => {
-                            console.log('Attaching drag-and-drop listeners');
-                            this.setupDragAndDrop();
-                        }, 0);
-                    } else {
-                        await this.loadAllPlayers();
-                        app.innerHTML = this.getLoginHTML();
+                    try {
+                        if (this.state.showAdminPassword) {
+                            app.innerHTML = this.getAdminPasswordPrompt();
+                        } else if (this.state.playerId && this.state.playerData) {
+                            app.innerHTML = this.getGameHTML();
+                            setTimeout(() => {
+                                console.log('Attaching drag-and-drop listeners');
+                                this.setupDragAndDrop();
+                            }, 0);
+                        } else {
+                            await this.loadAllPlayers();
+                            app.innerHTML = this.getLoginHTML();
+                        }
+                        console.log('Render complete');
+                    } catch (error) {
+                        console.error('Render error:', error);
+                        app.innerHTML = `
+                            <div class="flex items-center justify-center min-h-screen">
+                                <div class="login-container">
+                                    <div class="text-center mb-8">
+                                        <h1 class="text-5xl font-black text-gray-900 mb-2">🐾 Animal Game</h1>
+                                        <p class="text-xl text-gray-600 font-semibold">Who Said That?</p>
+                                        <p class="text-red-600 mt-4">Error: Failed to load. Please refresh and try again.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
                     }
-                    console.log('Render complete');
                 }
             }
             console.log('Creating AnimalGame instance');
@@ -1496,22 +1480,6 @@
             console.log('Script fully loaded at:', new Date().toISOString());
         } catch (error) {
             console.error('Top-level script error:', error);
-            alert('App failed to initialize: ' + error.message);
             const app = document.getElementById('app');
             if (app) {
-                app.innerHTML = `
-                    <div class="flex items-center justify-center min-h-screen">
-                        <div class="login-container">
-                            <div class="text-center mb-8">
-                                <h1 class="text-5xl font-black text-gray-900 mb-2">🐾 Animal Game</h1>
-                                <p class="text-xl text-gray-600 font-semibold">Who Said That?</p>
-                                <p class="text-red-600 mt-4">Error: Failed to load. Please refresh and try again.</p>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-        }
-    </script>
-</body>
-</html>
+                app
