@@ -3,9 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Animal Game - Who Said That?</title>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-database-compat.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Poppins:wght@400;600;700;800;900&display=swap');
@@ -373,17 +376,35 @@
 <body>
     <div id="app" class="p-4 min-h-screen">Loading...</div>
     <script>
+        console.log('Script started loading at:', new Date().toISOString());
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "uslawshield-bingo.firebaseapp.com",
-            projectId: "uslawshield-bingo",
-            storageBucket: "uslawshield-bingo.appspot.com",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID",
-            databaseURL: "https://uslawshield-bingo-default-rtdb.firebaseio.com/"
+            apiKey: "AIzaSyDYrG4LKP8LoS1vbCY9vBbTsox8HPTG8do",
+            authDomain: "uslawshield-whosaidthat.firebaseapp.com",
+            databaseURL: "https://uslawshield-whosaidthat-default-rtdb.firebaseio.com",
+            projectId: "uslawshield-whosaidthat",
+            storageBucket: "uslawshield-whosaidthat.firebasestorage.app",
+            messagingSenderId: "307999330341",
+            appId: "1:307999330341:web:6aca6a904d472229dd6fcc",
+            measurementId: "G-XB4TLXJXHT"
         };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+        let db;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+            console.log('Firebase initialized successfully');
+        } catch (error) {
+            console.error('Firebase initialization failed:', error);
+            alert(`Failed to connect to Firebase: ${error.message}. Showing offline mode.`);
+            db = {
+                ref: () => ({
+                    once: async () => ({ val: () => ({}) }),
+                    update: async () => {},
+                    push: () => ({ key: 'mockId', set: async () => {} }),
+                    on: () => {},
+                    remove: async () => {}
+                })
+            };
+        }
         const ADMIN_PASSWORD = "Airport-1";
         const ADMIN_NAME = "Sherry Morse";
         const EMPLOYEES = [
@@ -400,6 +421,7 @@
         ];
         class AnimalGame {
             constructor() {
+                console.log('AnimalGame constructor called');
                 this.state = {
                     isAdmin: false,
                     playerId: null,
@@ -558,7 +580,8 @@
                     console.log('Loaded players:', this.state.allPlayers);
                 } catch (error) {
                     console.error('Error loading players:', error);
-                    alert('Failed to load players. Please try again.');
+                    alert('Failed to load players. Showing offline mode.');
+                    this.state.allPlayers = [];
                 }
             }
             async handleMatch(clueId, employeeId) {
@@ -1339,9 +1362,12 @@
                     await this.loadAllPlayers();
                     app.innerHTML = this.getLoginHTML();
                 }
+                console.log('Render complete');
             }
         }
+        console.log('Creating AnimalGame instance');
         const game = new AnimalGame();
+        console.log('Script fully loaded at:', new Date().toISOString());
     </script>
 </body>
 </html>
