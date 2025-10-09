@@ -11,7 +11,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-database-compat.js"></script>
     <link href="./output.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Poppins:wght@400;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Poppins:wght@400;600;700;800;900&display=swap&font-display=swap');
        
         body {
             font-family: 'Poppins', sans-serif;
@@ -243,6 +243,7 @@
             border: 3px solid #fbbf24;
             border-radius: 16px;
             padding: 1rem;
+            -webkit-backdrop-filter: blur(10px); /* Firefox fallback */
             backdrop-filter: blur(10px);
             z-index: 200;
             overflow-y: auto;
@@ -405,6 +406,13 @@
                 })
             };
         }
+        // Utility to add timeout to async operations
+        const withTimeout = (promise, ms) => {
+            const timeout = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('Operation timed out')), ms);
+            });
+            return Promise.race([promise, timeout]);
+        };
         const ADMIN_PASSWORD = "Airport-1";
         const ADMIN_NAME = "Sherry Morse";
         const EMPLOYEES = [
@@ -422,64 +430,82 @@
         class AnimalGame {
             constructor() {
                 console.log('AnimalGame constructor called');
-                this.state = {
-                    isAdmin: false,
-                    playerId: null,
-                    playerData: null,
-                    showLeverResult: false,
-                    leverPulled: false,
-                    correctCount: 0,
-                    shuffledClues: [],
-                    allPlayers: [],
-                    draggedEmployeeId: null,
-                    startTime: null,
-                    elapsedTime: 0,
-                    timerInterval: null,
-                    showAdminPassword: false,
-                    tempAdminName: null,
-                    showAdminPanel: false
-                };
-                const storedShuffledClues = localStorage.getItem('shuffledClues');
-                if (storedShuffledClues) {
-                    this.state.shuffledClues = JSON.parse(storedShuffledClues);
-                } else {
-                    this.initializeClues();
-                    localStorage.setItem('shuffledClues', JSON.stringify(this.state.shuffledClues));
-                }
-                this.startPresenceTracking();
-                const storedPlayerId = localStorage.getItem('playerId');
-                if (storedPlayerId) {
-                    console.log('Restoring session from localStorage with playerId:', storedPlayerId);
-                    const self = this;
-                    db.ref('players/' + storedPlayerId).once('value').then(snapshot => {
-                        self.state.playerData = snapshot.val();
-                        if (self.state.playerData) {
-                            self.state.playerId = storedPlayerId;
-                            self.state.isAdmin = self.state.playerData.isAdmin || false;
-                            db.ref('players/' + storedPlayerId).on('value', (snapshot) => {
+                try {
+                    this.state = {
+                        isAdmin: false,
+                        playerId: null,
+                        playerData: null,
+                        showLeverResult: false,
+                        leverPulled: false,
+                        correctCount: 0,
+                        shuffledClues: [],
+                        allPlayers: [],
+                        draggedEmployeeId: null,
+                        startTime: null,
+                        elapsedTime: 0,
+                        timerInterval: null,
+                        showAdminPassword: false,
+                        tempAdminName: null,
+                        showAdminPanel: false
+                    };
+                    // Load shuffled clues from localStorage or initialize
+                    const storedShuffledClues = localStorage.getItem('shuffledClues');
+                    if (storedShuffledClues) {
+                        try {
+                            this.state.shuffledClues = JSON.parse(storedShuffledClues);
+                            console.log('Restored shuffled clues from localStorage');
+                        } catch (e) {
+                            console.warn('Invalid shuffledClues in localStorage, reinitializing');
+                            this.initializeClues();
+                            localStorage.setItem('shuffledClues', JSON.stringify(this.state.shuffledClues));
+                        }
+                    } else {
+                        this.initializeClues();
+                        localStorage.setItem('shuffledClues', JSON.stringify(this.state.shuffledClues));
+                    }
+                    this.startPresenceTracking();
+                    // Check for existing session
+                    const storedPlayerId = localStorage.getItem('playerId');
+                    if (storedPlayerId) {
+                        console.log('Restoring session from localStorage with playerId:', storedPlayerId);
+                        const self = this;
+                        withTimeout(db.ref('players/' + storedPlayerId).once('value'), 5000)
+                            .then(snapshot => {
                                 self.state.playerData = snapshot.val();
-                                console.log('Player data updated:', self.state.playerData);
+                                if (self.state.playerData) {
+                                    self.state.playerId = storedPlayerId;
+                                    self.state.isAdmin = self.state.playerData.isAdmin || false;
+                                    db.ref('players/' + storedPlayerId).on('value', (snapshot) => {
+                                        self.state.playerData = snapshot.val();
+                                        console.log('Player data updated:', self.state.playerData);
+                                        self.render();
+                                    });
+                                    if (!self.state.isAdmin) {
+                                        self.startTimer();
+                                    }
+                                    if (self.state.isAdmin) {
+                                        self.loadAllPlayers();
+                                        self.listenForNotifications();
+                                    }
+                                    self.render();
+                                } else {
+                                    console.log('Stored playerId invalid, clearing localStorage');
+                                    self.clearLocalStorage();
+                                    self.render();
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error loading stored player:', error);
+                                self.clearLocalStorage();
                                 self.render();
                             });
-                            if (!self.state.isAdmin) {
-                                self.startTimer();
-                            }
-                            if (self.state.isAdmin) {
-                                self.loadAllPlayers();
-                                self.listenForNotifications();
-                            }
-                            self.render();
-                        } else {
-                            console.log('Stored playerId invalid, clearing localStorage');
-                            self.clearLocalStorage();
-                            self.render();
-                        }
-                    }).catch(error => {
-                        console.error('Error loading stored player:', error);
-                        self.clearLocalStorage();
-                        self.render();
-                    });
-                } else {
+                    } else {
+                        this.render();
+                    }
+                } catch (error) {
+                    console.error('Constructor error:', error);
+                    alert('Error initializing game: ' + error.message);
+                    this.clearLocalStorage();
                     this.render();
                 }
             }
@@ -551,7 +577,7 @@
                 try {
                     console.log('Initializing player:', playerName, 'isAdmin:', isAdmin);
                     const playersRef = db.ref('players');
-                    const snapshot = await playersRef.once('value').catch(error => {
+                    const snapshot = await withTimeout(playersRef.once('value'), 5000).catch(error => {
                         console.error('Firebase read error:', error);
                         throw error;
                     });
@@ -600,6 +626,7 @@
                     db.ref('players/' + playerId).on('value', (snapshot) => {
                         self.state.playerData = snapshot.val();
                         console.log('Player data updated:', self.state.playerData);
+                        self.render();
                     });
                     if (!isAdmin) {
                         this.startTimer();
@@ -616,7 +643,7 @@
             async loadAllPlayers() {
                 try {
                     console.log('Loading all players');
-                    const snapshot = await db.ref('players').once('value').catch(error => {
+                    const snapshot = await withTimeout(db.ref('players').once('value'), 5000).catch(error => {
                         console.error('Firebase read error:', error);
                         throw error;
                     });
@@ -648,7 +675,7 @@
                     history,
                     lastActive: Date.now()
                 }).catch(error => console.error('Firebase update error:', error));
-                // Send notification
+                // Send notification to admin
                 const correct = parseInt(clueId) === employeeId;
                 const remaining = EMPLOYEES.length - Object.keys(matches).length;
                 const animal = this.state.shuffledClues.find(clue => clue.id === clueId).animal;
@@ -754,8 +781,9 @@
                 this.render();
             }
             handleEscKey = (event) => {
-                if (event.key === 'Escape') {
-                    this.state.showLeverResult = false;
+                if (event.key === 'Escape' && this.state.showLeverResult && this.state.playerData.isSubmitted) {
+                    console.log('ESC pressed, logging out');
+                    document.removeEventListener('keydown', this.handleEscKey);
                     this.logout();
                 }
             }
@@ -781,7 +809,7 @@
             async addPlayer(name) {
                 console.log('Adding player:', name);
                 const playersRef = db.ref('players');
-                const snapshot = await playersRef.once('value').catch(error => {
+                const snapshot = await withTimeout(playersRef.once('value'), 5000).catch(error => {
                     console.error('Firebase read error:', error);
                     throw error;
                 });
@@ -836,7 +864,7 @@
             async editPlayerMatch(playerId, clueId, employeeId) {
                 console.log('Editing match for player:', playerId, 'clueId:', clueId, 'employeeId:', employeeId);
                 const playerRef = db.ref('players/' + playerId);
-                const snapshot = await playerRef.once('value').catch(error => {
+                const snapshot = await withTimeout(playerRef.once('value'), 5000).catch(error => {
                     console.error('Firebase read error:', error);
                     throw error;
                 });
@@ -870,11 +898,14 @@
                 this.render();
             }
             listenForNotifications() {
-                const self = this;
-                db.ref('notifications').on('child_added', (snapshot) => {
-                    const notification = snapshot.val();
-                    alert(`${notification.playerName} marked an answer for ${notification.clue}: ${notification.correct ? 'Correct' : 'Incorrect'}. Remaining: ${notification.remaining}`);
-                });
+                if (this.state.isAdmin && this.state.playerData.name.toLowerCase() === ADMIN_NAME.toLowerCase()) {
+                    console.log('Setting up notification listener for admin');
+                    const self = this;
+                    db.ref('notifications').on('child_added', (snapshot) => {
+                        const notification = snapshot.val();
+                        alert(`${notification.playerName} marked an answer for ${notification.clue}: ${notification.correct ? 'Correct' : 'Incorrect'}. ${notification.remaining} remaining.`);
+                    });
+                }
             }
             setupDragAndDrop() {
                 console.log('Setting up drag-and-drop listeners');
@@ -1012,7 +1043,7 @@
             getAdminHTML() {
                 return `
                     <div class="max-w-7xl mx-auto py-8">
-                        <div class="admin-panel" style="background: rgba(0,0,0,0.9); border: 3px solid #fbbf24; border-radius: 16px; padding: 1.5rem; backdrop-filter: blur(10px);">
+                        <div class="admin-panel" style="background: rgba(0,0,0,0.9); border: 3px solid #fbbf24; border-radius: 16px; padding: 1.5rem; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);">
                             <div class="flex items-center justify-between mb-6">
                                 <div>
                                     <h1 class="text-4xl font-bold text-white mb-2">Admin Dashboard</h1>
@@ -1198,10 +1229,10 @@
                 this.render();
             }
             getGameHTML() {
-                const matches = this.state.playerData.matches || {};
+                const matches = this.state.playerData?.matches || {};
                 const matchCount = Object.keys(matches).length;
-                const checksRemaining = 2 - (this.state.playerData.checksUsed || 0);
-                const canPullLever = matchCount === EMPLOYEES.length && checksRemaining > 0 && !this.state.playerData.isSubmitted;
+                const checksRemaining = 2 - (this.state.playerData?.checksUsed || 0);
+                const canPullLever = matchCount === EMPLOYEES.length && checksRemaining > 0 && !this.state.playerData?.isSubmitted;
                 let html = `
                     <div class="timer-badge">
                         ⏱️ <span id="timer">${this.formatTime(this.state.elapsedTime)}</span>
@@ -1213,7 +1244,7 @@
                                 ANIMAL GAME
                             </h1>
                             <p class="text-2xl text-yellow-300 font-bold">Who Said That?</p>
-                            <p class="text-xl text-white mt-2">Welcome, ${this.state.playerData.name}!</p>
+                            <p class="text-xl text-white mt-2">Welcome, ${this.state.playerData?.name || 'Guest'}!</p>
                             ${this.state.isAdmin ? `
                                 <button
                                     onclick="game.logout()"
@@ -1226,8 +1257,8 @@
                 `;
                 if (this.state.showLeverResult) {
                     html += `
-                        <div class="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-50" tabindex="0" onkeydown="if(event.key === 'Escape') game.logout()">
-                            <div class="race-game-border" style="width: 700px;">
+                        <div class="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-50" tabindex="0">
+                            <div class="race-game-border" style="width: 800px; max-height: 80vh; overflow-y: auto;">
                                 <div class="race-game-inner p-8">
                                     <div class="race-game-header text-center">
                                         ${this.state.playerData.isSubmitted ? '🎉 FINAL RESULTS' : '✓ CHECK RESULTS'}
@@ -1235,12 +1266,12 @@
                                     <div class="lcd-display active mt-6">
                                         ${this.state.correctCount}
                                     </div>
-                                    <div class="text-center text-3xl font-bold mt-6" style="color: #064e3b;">
+                                    <div class="text-center text-3xl font-bold mt-6 text-green-900">
                                         CORRECT OUT OF ${EMPLOYEES.length}!
                                     </div>
                                     ${this.state.playerData.isSubmitted ? `
-                                        <div class="text-center text-2xl font-bold mt-4" style="color: #064e3b;">
-                                            Time: ${this.formatTime(this.state.playerData.completionTime)}
+                                        <div class="text-center text-2xl font-bold mt-4 text-green-900">
+                                            Completion Time: ${this.formatTime(this.state.playerData.completionTime)}
                                         </div>
                                         <div class="mt-6 space-y-4">
                                             ${this.state.shuffledClues.map(clue => {
@@ -1250,11 +1281,14 @@
                                                 const correctName = EMPLOYEES.find(e => e.id === correctId).name;
                                                 const isCorrect = selectedId === correctId;
                                                 return `
-                                                    <div class="bg-white p-4 rounded-lg shadow">
-                                                        <div class="animal-name">🐾 ${clue.animal}</div>
-                                                        <div class="quote-text">"${clue.quote}"</div>
+                                                    <div class="bg-white p-4 rounded-lg shadow-md border ${isCorrect ? 'border-green-500' : 'border-red-500'}">
+                                                        <div class="flex items-center gap-2">
+                                                            <span class="text-2xl">${isCorrect ? '✅' : '❌'}</span>
+                                                            <div class="animal-name text-lg">${clue.animal}</div>
+                                                        </div>
+                                                        <div class="quote-text text-gray-600">"${clue.quote}"</div>
                                                         <div class="mt-2 font-bold ${isCorrect ? 'text-green-600' : 'text-red-600'}">
-                                                            ${isCorrect ? '✓ ' : 'X '} ${selectedName} ${isCorrect ? '' : '(' + correctName + ')'}
+                                                            Selected: ${selectedName} ${isCorrect ? '' : `(Correct: ${correctName})`}
                                                         </div>
                                                     </div>
                                                 `;
@@ -1269,7 +1303,7 @@
                                                 <span class="text-blue-600">Sherry Morse</span> for validation!
                                             </p>
                                             <p class="text-center text-sm text-gray-600 mt-2">
-                                                Press ESC to close and log off.
+                                                Press ESC to close and log off, or click below to play again.
                                             </p>
                                         </div>
                                         <button
@@ -1284,7 +1318,8 @@
                         </div>
                     `;
                 }
-                html += `
+                if (!this.state.playerData.isSubmitted) {
+                    html += `
                         <div class="grid lg:grid-cols-3 gap-8 mb-8">
                             <div class="lg:col-span-2">
                                 <div class="race-game-border">
@@ -1293,30 +1328,30 @@
                                             🦁 ANIMALS & QUOTES
                                         </div>
                                         <div class="space-y-3 mt-6">
-                `;
-                this.state.shuffledClues.forEach(clue => {
-                    html += `
-                        <div class="clue-card ${matches[clue.id] ? 'has-tag' : ''}" style="position: relative;">
-                            <div class="animal-name">🐾 ${clue.animal}</div>
-                            <div class="quote-text" style="max-width: calc(100% - 240px);">"${clue.quote}"</div>
                     `;
-                    if (matches[clue.id]) {
-                        const emp = EMPLOYEES.find(e => e.id === matches[clue.id]);
+                    this.state.shuffledClues.forEach(clue => {
                         html += `
-                            <div class="neon-tag placed" data-clue-id="${clue.id}" data-employee-id="${matches[clue.id]}">
-                                ${emp.name}
-                            </div>
+                            <div class="clue-card ${matches[clue.id] ? 'has-tag' : ''}" style="position: relative;">
+                                <div class="animal-name">🐾 ${clue.animal}</div>
+                                <div class="quote-text" style="max-width: calc(100% - 240px);">"${clue.quote}"</div>
                         `;
-                    } else {
-                        html += `
-                            <div class="drop-zone" data-clue-id="${clue.id}">
-                                <span style="color: rgba(255, 255, 255, 0.4); font-size: 0.85rem; font-weight: bold;">DROP TAG HERE</span>
-                            </div>
-                        `;
-                    }
-                    html += `</div>`;
-                });
-                html += `
+                        if (matches[clue.id]) {
+                            const emp = EMPLOYEES.find(e => e.id === matches[clue.id]);
+                            html += `
+                                <div class="neon-tag placed" data-clue-id="${clue.id}" data-employee-id="${matches[clue.id]}">
+                                    ${emp.name}
+                                </div>
+                            `;
+                        } else {
+                            html += `
+                                <div class="drop-zone" data-clue-id="${clue.id}">
+                                    <span style="color: rgba(255, 255, 255, 0.4); font-size: 0.85rem; font-weight: bold;">DROP TAG HERE</span>
+                                </div>
+                            `;
+                        }
+                        html += `</div>`;
+                    });
+                    html += `
                                         </div>
                                     </div>
                                 </div>
@@ -1328,20 +1363,20 @@
                                     </div>
                                     <p class="text-center text-white mt-4 text-sm font-bold">Drag names to quotes</p>
                                     <div class="tag-container">
-                `;
-                EMPLOYEES.forEach(employee => {
-                    const isAssigned = Object.values(matches).includes(employee.id);
-                    if (isAssigned && !this.state.playerData.isSubmitted) return;
-                    html += `
-                        <div class="neon-tag"
-                             draggable="${!this.state.playerData.isSubmitted && !isAssigned}"
-                             data-employee-id="${employee.id}"
-                             style="${isAssigned ? 'opacity: 0.3; cursor: not-allowed;' : ''}">
-                            ${employee.name}
-                        </div>
                     `;
-                });
-                html += `
+                    EMPLOYEES.forEach(employee => {
+                        const isAssigned = Object.values(matches).includes(employee.id);
+                        if (isAssigned && !this.state.playerData.isSubmitted) return;
+                        html += `
+                            <div class="neon-tag"
+                                 draggable="${!this.state.playerData.isSubmitted && !isAssigned}"
+                                 data-employee-id="${employee.id}"
+                                 style="${isAssigned ? 'opacity: 0.3; cursor: not-allowed;' : ''}">
+                                ${employee.name}
+                            </div>
+                        `;
+                    });
+                    html += `
                                     </div>
                                 </div>
                             </div>
@@ -1394,7 +1429,7 @@
                 return html;
             }
             async login() {
-                const playerName = document.getElementById('nameInput').value.trim();
+                const playerName = document.getElementById('nameInput')?.value.trim();
                 if (!playerName) {
                     alert('Please enter your name!');
                     return;
@@ -1412,7 +1447,7 @@
                 }
             }
             async verifyAdminPassword() {
-                const password = document.getElementById('adminPassword').value;
+                const password = document.getElementById('adminPassword')?.value;
                 if (password !== ADMIN_PASSWORD) {
                     alert('Incorrect password! Please try again.');
                     document.getElementById('adminPassword').value = '';
@@ -1431,6 +1466,7 @@
             logout() {
                 if (confirm('Are you sure you want to logout?')) {
                     console.log('Logging out');
+                    document.removeEventListener('keydown', this.handleEscKey);
                     this.clearLocalStorage();
                     this.state.isAdmin = false;
                     this.state.playerId = null;
@@ -1443,21 +1479,48 @@
                 }
             }
             async render() {
-                console.log('Rendering with state:', this.state);
+                console.log('Rendering with state:', JSON.parse(JSON.stringify(this.state)));
                 const app = document.getElementById('app');
-                if (this.state.showAdminPassword) {
-                    app.innerHTML = this.getAdminPasswordPrompt();
-                } else if (this.state.playerId && this.state.playerData) {
-                    app.innerHTML = this.getGameHTML();
-                    setTimeout(() => {
-                        console.log('Attaching drag-and-drop listeners');
-                        this.setupDragAndDrop();
-                    }, 0);
-                } else {
-                    await this.loadAllPlayers();
-                    app.innerHTML = this.getLoginHTML();
+                if (!app) {
+                    console.error('App element not found');
+                    return;
                 }
-                console.log('Render complete');
+                try {
+                    if (this.state.showAdminPassword) {
+                        app.innerHTML = this.getAdminPasswordPrompt();
+                    } else if (this.state.playerId && this.state.playerData) {
+                        app.innerHTML = this.getGameHTML();
+                        setTimeout(() => {
+                            console.log('Attaching drag-and-drop listeners');
+                            this.setupDragAndDrop();
+                            // Ensure focus for ESC key on final screen
+                            if (this.state.showLeverResult && this.state.playerData.isSubmitted) {
+                                const finalScreen = document.querySelector('.fixed.inset-0');
+                                if (finalScreen) finalScreen.focus();
+                            }
+                        }, 0);
+                    } else {
+                        await this.loadAllPlayers();
+                        app.innerHTML = this.getLoginHTML();
+                    }
+                    console.log('Render complete');
+                } catch (error) {
+                    console.error('Render error:', error);
+                    app.innerHTML = `
+                        <div class="flex items-center justify-center min-h-screen text-white">
+                            <div class="text-center">
+                                <h1 class="text-4xl font-bold mb-4">Error Loading Game</h1>
+                                <p class="text-lg mb-4">An error occurred: ${error.message}</p>
+                                <button
+                                    onclick="location.reload()"
+                                    class="bg-blue-500 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-600"
+                                >
+                                    Try Again
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
             }
         }
         console.log('Creating AnimalGame instance');
